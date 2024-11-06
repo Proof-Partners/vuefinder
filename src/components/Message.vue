@@ -1,13 +1,10 @@
 <template>
   <div>
-    <div
-      v-if="!hidden"
-      ref="strMessage"
-      class="vuefinder__message"
-      :class="error ? 'vuefinder__message--error' : 'vuefinder__message--success'">
+    <div v-if="!hidden" ref="strMessage" :class="['message', error ? 'error' : 'success']">
       <slot></slot>
-      <div class="vuefinder__message__close" @click="hide" :title="t('Close')">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="vuefinder__message__icon">
+      <div class="close" @click="hide" :title="t('Close')">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+          class="icon">
           <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
         </svg>
       </div>
@@ -15,22 +12,17 @@
   </div>
 </template>
 
-<script setup>
-import {ref, watch, inject} from 'vue';
+<script setup lang="ts">
+import { ref, watch, inject } from 'vue';
 
 const emit = defineEmits(['hidden']);
-const props = defineProps({
-  error: {
-    type: Boolean,
-    default: false
-  }
-});
+const { error = false } = defineProps<{ error: boolean }>();
 
 const app = inject('ServiceContainer');
-const {t} = app.i18n;
+const { t } = app.i18n;
 
 const hidden = ref(false);
-const strMessage = ref(null);
+const strMessage = ref<unknown>(null);
 const strSlot = ref(strMessage.value?.strMessage);
 
 watch(strSlot, () => hidden.value = false);
@@ -40,3 +32,25 @@ const hide = () => {
   hidden.value = true;
 };
 </script>
+
+<style lang="postcss" scoped>
+.message {
+  @apply flex mt-2 p-1 px-2 rounded text-sm break-all dark:opacity-75;
+
+  &.error {
+    @apply bg-red-100 text-red-600;
+  }
+
+  &.success {
+    @apply bg-emerald-100 text-emerald-600;
+  }
+
+  & .close {
+    @apply ml-auto cursor-pointer;
+
+    & .icon {
+      @apply w-5 h-5;
+    }
+  }
+}
+</style>

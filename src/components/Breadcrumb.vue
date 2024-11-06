@@ -1,104 +1,81 @@
 <template>
-  <div class="vuefinder__breadcrumb__container">
+  <div class="breadcrumb">
     <span :title="t('Toggle Tree View')">
-      <ListTreeSVG
-          @click="toggleTreeView"
-          class="vuefinder__breadcrumb__toggle-tree"
-          :class="app.showTreeView ? 'vuefinder__breadcrumb__toggle-tree--active' : ''"
-      />
+      <ListTreeSVG @click="toggleTreeView" :class="['toggle-tree', { active: app.showTreeView }]" />
     </span>
 
     <span :title="t('Go up a directory')">
-      <GoUpSVG
-          @dragover="handleDragOver($event)"
-          @dragleave="handleDragLeave($event)"
-          @drop="handleDropZone($event)"
-          @click="handleGoUp"
-          :class="app.fs.isGoUpAvailable() ? 'vuefinder__breadcrumb__go-up--active' : 'vuefinder__breadcrumb__go-up--inactive'"
-      />
+      <GoUpSVG @dragover="handleDragOver($event)" @dragleave="handleDragLeave($event)" @drop="handleDropZone($event)"
+        @click="handleGoUp" :class="['go-up', app.fs.isGoUpAvailable() ? 'active' : 'inactive']" />
     </span>
 
     <span :title="t('Refresh')" v-if="!app.fs.loading">
-      <RefreshSVG @click="handleRefresh"/>
+      <RefreshSVG @click="handleRefresh" />
     </span>
     <span :title="t('Cancel')" v-else>
-      <CloseSVG @click="app.emitter.emit('vf-fetch-abort')"/>
+      <CloseSVG @click="app.emitter.emit('vf-fetch-abort')" />
     </span>
 
-    <div v-show="!app.fs.searchMode" @click.self="enterSearchMode" class="group vuefinder__breadcrumb__search-container">
+    <div v-show="!app.fs.searchMode" @click.self="enterSearchMode" class="group search-container">
       <div>
-        <HomeSVG
-          @dragover="handleDragOver($event)"
-          @dragleave="handleDragLeave($event)"
+        <HomeSVG @dragover="handleDragOver($event)" @dragleave="handleDragLeave($event)"
           @drop="handleDropZone($event, -1)"
-          @click="app.emitter.emit('vf-fetch', {params:{q: 'index', adapter: app.fs.adapter}})"/>
+          @click="app.emitter.emit('vf-fetch', { params: { q: 'index', adapter: app.fs.adapter } })" />
       </div>
 
-      <div class="vuefinder__breadcrumb__list">
-        <div v-if="app.fs.hiddenBreadcrumbs.length" class="vuefinder__breadcrumb__hidden-list" v-click-outside="handleClickOutside">
-          <div class="vuefinder__breadcrumb__separator">/</div>
+      <div class="list">
+        <div v-if="app.fs.hiddenBreadcrumbs.length" class="hidden-list" v-click-outside="handleClickOutside">
+          <div class="separator">/</div>
           <div class="relative">
-            <span 
-            @dragenter="app.fs.toggleHiddenBreadcrumbs(true)"
-            @click="app.fs.toggleHiddenBreadcrumbs()"
-                   class="vuefinder__breadcrumb__hidden-toggle">
-              <DotsSVG class="vuefinder__breadcrumb__hidden-toggle-icon" />
+            <span @dragenter="app.fs.toggleHiddenBreadcrumbs(true)" @click="app.fs.toggleHiddenBreadcrumbs()"
+              class="hidden-toggle">
+              <DotsSVG class="hidden-toggle-icon" />
             </span>
           </div>
         </div>
       </div>
 
-      <div ref="breadcrumbContainer" class="vuefinder__breadcrumb__visible-list" @click.self="enterSearchMode">
+      <div ref="breadcrumbContainer" class="visible-list" @click.self="enterSearchMode">
         <div v-for="(item, index) in app.fs.breadcrumbs" :key="index">
-          <span class="vuefinder__breadcrumb__separator">/</span>
-          <span
-              @dragover="(index === app.fs.breadcrumbs.length - 1) || handleDragOver($event)"
-              @dragleave="(index === app.fs.breadcrumbs.length - 1) || handleDragLeave($event)"
-              @drop="(index === app.fs.breadcrumbs.length - 1) || handleDropZone($event, index)"
-              class="vuefinder__breadcrumb__item"
-              :title="item.basename"
-              @click="app.emitter.emit('vf-fetch', {params:{q: 'index', adapter: app.fs.adapter, path:item.path}})">{{ item.name }}</span>
+          <span class="separator">/</span>
+          <span @dragover="(index === app.fs.breadcrumbs.length - 1) || handleDragOver($event)"
+            @dragleave="(index === app.fs.breadcrumbs.length - 1) || handleDragLeave($event)"
+            @drop="(index === app.fs.breadcrumbs.length - 1) || handleDropZone($event, index)" class="item"
+            :title="item.basename"
+            @click="app.emitter.emit('vf-fetch', { params: { q: 'index', adapter: app.fs.adapter, path: item.path } })">{{
+              item.name }}</span>
         </div>
       </div>
 
-      <LoadingSVG v-if="app.loadingIndicator === 'circular' && app.fs.loading"/>
+      <LoadingSVG v-if="app.loadingIndicator === 'circular' && app.fs.loading" />
     </div>
-    <div v-show="app.fs.searchMode" class="vuefinder__breadcrumb__search-mode">
+    <div v-show="app.fs.searchMode" class="search-mode">
       <div>
         <SearchSVG />
       </div>
-      <input
-          ref="searchInput"
-          @keydown.esc="exitSearchMode"
-          @blur="handleBlur"
-          v-model="query"
-          :placeholder="t('Search anything..')"
-          class="vuefinder__breadcrumb__search-input"
-          type="text">
-      <ExitSVG @click="exitSearchMode"/>
+      <input ref="searchInput" @keydown.esc="exitSearchMode" @blur="handleBlur" v-model="query"
+        :placeholder="t('Search anything..')" class="search-input" type="text">
+      <ExitSVG @click="exitSearchMode" />
     </div>
 
-    <div v-show="app.fs.showHiddenBreadcrumbs"
-        class="vuefinder__breadcrumb__hidden-dropdown">
-      <div
-          v-for="(item, index) in app.fs.hiddenBreadcrumbs" :key="index"
-          @dragover="handleDragOver($event)"
-          @dragleave="handleDragLeave($event)"
-          @drop="handleHiddenBreadcrumbDropZone($event, index)"
-          @click="handleHiddenBreadcrumbsClick(item)"
-          class="vuefinder__breadcrumb__hidden-item">
-        <div class="vuefinder__breadcrumb__hidden-item-content">
-          <span><FolderSVG class="vuefinder__breadcrumb__hidden-item-icon" /></span> <span class="vuefinder__breadcrumb__hidden-item-text">{{ item.name}}</span>
+    <div v-show="app.fs.showHiddenBreadcrumbs" class="hidden-dropdown">
+      <div v-for="(item, index) in app.fs.hiddenBreadcrumbs" :key="index" @dragover="handleDragOver($event)"
+        @dragleave="handleDragLeave($event)" @drop="handleHiddenBreadcrumbDropZone($event, index)"
+        @click="handleHiddenBreadcrumbsClick(item)" class="hidden-item">
+        <div class="hidden-item-content">
+          <span>
+            <FolderSVG class="hidden-item-icon" />
+          </span> <span class="hidden-item-text">{{ item.name }}</span>
         </div>
       </div>
     </div>
   </div>
 </template>
 
-<script setup>
-import {inject, nextTick, onMounted, onUnmounted, ref, watch} from 'vue';
+<script setup lang="ts">
+import { inject, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import useDebouncedRef from '../composables/useDebouncedRef.js';
-import {FEATURES} from "../features.js";
+import { FEATURES } from "../features.js";
 import ModalMove from "./modals/ModalMove.vue";
 import RefreshSVG from "./icons/refresh.svg";
 import GoUpSVG from "./icons/go_up.svg";
@@ -112,13 +89,13 @@ import ListTreeSVG from './icons/list_tree.svg';
 import DotsSVG from './icons/dots.svg';
 
 const app = inject('ServiceContainer');
-const {t} = app.i18n;
+const { t } = app.i18n;
 const ds = app.dragSelect;
-const {setStore} = app.storage;
+const { setStore } = app.storage;
 
 // dynamic shown items calculation for breadcrumbs
 const breadcrumbContainer = ref(null);
-const breadcrumbContainerWidth = useDebouncedRef(0,100);
+const breadcrumbContainerWidth = useDebouncedRef(0, 100);
 watch(breadcrumbContainerWidth, newQuery => {
   const children = breadcrumbContainer.value.children;
   let totalWidth = 0;
@@ -128,7 +105,7 @@ watch(breadcrumbContainerWidth, newQuery => {
 
   app.fs.limitBreadcrumbItems(max_shown_items);
   nextTick(() => {
-    for (let i = children.length-1; i >= 0; i--) {
+    for (let i = children.length - 1; i >= 0; i--) {
       if (totalWidth + children[i].offsetWidth > breadcrumbContainerWidth.value - 40) {
         break;
       }
@@ -144,16 +121,16 @@ watch(breadcrumbContainerWidth, newQuery => {
 });
 
 const updateContainerWidth = () => {
-    breadcrumbContainerWidth.value = breadcrumbContainer.value.offsetWidth;
+  breadcrumbContainerWidth.value = breadcrumbContainer.value.offsetWidth;
 }
 let resizeObserver = ref(null);
 
 onMounted(() => {
-    resizeObserver.value = new ResizeObserver(updateContainerWidth);
-    resizeObserver.value.observe(breadcrumbContainer.value);
+  resizeObserver.value = new ResizeObserver(updateContainerWidth);
+  resizeObserver.value.observe(breadcrumbContainer.value);
 });
 onUnmounted(() => {
-    resizeObserver.value.disconnect();
+  resizeObserver.value.disconnect();
 });
 
 const handleHiddenBreadcrumbDropZone = (e, index = null) => {
@@ -174,7 +151,7 @@ const handleHiddenBreadcrumbDropZone = (e, index = null) => {
   app.modal.open(ModalMove, {
     items: {
       from: draggedItems,
-      to: app.fs.hiddenBreadcrumbs[index] ?? {path: (app.fs.adapter + '://')}
+      to: app.fs.hiddenBreadcrumbs[index] ?? { path: (app.fs.adapter + '://') }
     }
   })
 };
@@ -197,7 +174,7 @@ const handleDropZone = (e, index = null) => {
   app.modal.open(ModalMove, {
     items: {
       from: draggedItems,
-      to: app.fs.breadcrumbs[index] ?? {path: (app.fs.adapter + '://')}
+      to: app.fs.breadcrumbs[index] ?? { path: (app.fs.adapter + '://') }
     }
   })
 };
@@ -227,7 +204,7 @@ const handleDragLeave = (e) => {
 const handleRefresh = () => {
   exitSearchMode();
 
-  app.emitter.emit('vf-fetch',{params:{q: 'index', adapter: app.fs.adapter, path: app.fs.data.dirname}} );
+  app.emitter.emit('vf-fetch', { params: { q: 'index', adapter: app.fs.adapter, path: app.fs.data.dirname } });
 }
 
 const handleGoUp = () => {
@@ -243,7 +220,7 @@ const handleGoUp = () => {
 }
 
 const handleHiddenBreadcrumbsClick = (item) => {
-  app.emitter.emit('vf-fetch', {params: {q: 'index', adapter: app.fs.adapter, path: item.path}});
+  app.emitter.emit('vf-fetch', { params: { q: 'index', adapter: app.fs.adapter, path: item.path } });
   app.fs.toggleHiddenBreadcrumbs(false);
 }
 
@@ -299,7 +276,7 @@ const query = useDebouncedRef('', 400);
 
 watch(query, newQuery => {
   app.emitter.emit('vf-toast-clear');
-  app.emitter.emit('vf-search-query', {newQuery});
+  app.emitter.emit('vf-search-query', { newQuery });
 });
 
 watch(() => app.fs.searchMode, (newSearchMode) => {
@@ -325,4 +302,78 @@ const handleBlur = () => {
 }
 </script>
 
+<style lang="postcss" scoped>
+.breadcrumb {
+  @apply space-x-0.5 flex p-1.5 bg-neutral-100 dark:bg-gray-800 border-t border-b border-neutral-300 dark:border-gray-700/50 items-center select-none text-sm grow-0;
 
+  & .toggle-tree {
+    @apply h-6 w-6 p-0.5 rounded cursor-pointer text-slate-700;
+
+    &.active {
+      @apply bg-gray-300 dark:bg-gray-700;
+    }
+  }
+
+  & .go-up {
+    &.active {
+      @apply text-slate-700 hover:bg-neutral-300 dark:text-neutral-200 dark:hover:bg-gray-700 cursor-pointer;
+    }
+
+    &.inactive {
+      @apply text-gray-400 dark:text-neutral-500;
+    }
+  }
+
+  & .search-container {
+    @apply flex bg-white dark:bg-gray-700 items-center rounded p-1 ml-2 w-full overflow-hidden;
+  }
+
+  & .list {
+    @apply flex leading-6;
+  }
+
+  & .hidden-list {
+    @apply flex;
+  }
+
+  & .separator {
+    @apply text-neutral-300 dark:text-gray-600 mx-0.5;
+  }
+
+  & .hidden-toggle {
+    @apply text-slate-700 dark:text-slate-200 hover:bg-neutral-100 dark:hover:bg-gray-800 rounded cursor-pointer;
+  }
+
+  & .hidden-toggle-icon {
+    @apply px-1 pointer-events-none;
+  }
+
+  & .visible-list {
+    @apply flex leading-6 w-full overflow-hidden;
+  }
+
+  & .item {
+    @apply px-1.5 py-1 text-slate-700 dark:text-slate-200 hover:bg-neutral-100 dark:hover:bg-gray-800 rounded cursor-pointer whitespace-nowrap;
+  }
+
+  & .search-mode {
+    @apply relative flex bg-white dark:bg-gray-700 justify-between items-center rounded p-1 ml-2 w-full;
+  }
+
+  & .search-input {
+    @apply w-full pb-0 px-1 border-0 text-base ring-0 outline-0 text-gray-600 focus:ring-transparent focus:border-transparent dark:focus:ring-transparent dark:focus:border-transparent dark:text-gray-300 bg-transparent;
+  }
+
+  & .hidden-dropdown {
+    @apply z-30 absolute top-[65px] md:top-[75px] left-[90px] rounded -mx-1.5 mt-1 bg-neutral-50 dark:bg-gray-800 max-w-80 shadow overflow-y-auto text-gray-700 dark:text-gray-200 border border-neutral-300 dark:border-gray-600;
+  }
+
+  & .hidden-item {
+    @apply px-2 py-0.5 hover:bg-gray-400/20 cursor-pointer items-center whitespace-nowrap;
+  }
+
+  & .hidden-item-content {
+    @apply flex pointer-events-none;
+  }
+}
+</style>

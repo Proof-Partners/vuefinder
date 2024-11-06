@@ -1,26 +1,17 @@
 <template>
   <div class="wrapper">
     <div style="font-weight: bold;padding: 10px">Inline select button example</div>
-    <vue-finder
-      id='my_vuefinder'
-      :request="request"
-      :max-file-size="maxFileSize"
-      :features="features"
-      :select-button="handleSelectButton"
-    />
+    <vue-finder id='my_vuefinder' :request="request" :max-file-size="maxFileSize" :features="features"
+      :select-button="handleSelectButton" />
 
     <br>
     <br>
     <div style="font-weight: bold;padding: 10px">External select example</div>
-    <vue-finder
-      id='my_vuefinder2'
-      :request="request"
-      :max-file-size="maxFileSize"
-      :features="features"
-      @select="handleSelect"
-    />
+    <vue-finder id='my_vuefinder2' :request="request" :max-file-size="maxFileSize" :features="features"
+      @select="handleSelect" />
 
-    <button class="btn" @click="handleButton" :disabled="!selectedFiles.length">Show Selected  ({{ selectedFiles.length ?? 0 }} selected)</button>
+    <button class="btn" @click="handleButton" :disabled="!selectedFiles.length">Show Selected ({{ selectedFiles.length
+      ?? 0 }} selected)</button>
 
     <div v-show="selectedFiles.length">
       <h3>Selected Files ({{ selectedFiles.length }} selected)</h3>
@@ -43,7 +34,7 @@ import { FEATURES, FEATURE_ALL_NAMES } from '../src/features.js';
 const request = {
   // ----- CHANGE ME! -----
   // [REQUIRED] Url for development server endpoint
-  baseUrl: "http://vuefinder.ozdemir.be.test/vuefinder",
+  baseUrl: "http://localhost:8080",
   // ----- CHANGE ME! -----
 
   // Additional headers & params & body
@@ -107,11 +98,13 @@ body {
   margin: 0;
   background: #eeeeee;
 }
+
 .wrapper {
   max-width: 800px;
   margin: 80px auto;
 }
-.btn{
+
+.btn {
   display: block;
   margin: 20px auto;
   padding: 10px 20px;

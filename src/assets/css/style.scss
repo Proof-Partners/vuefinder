@@ -46,22 +46,11 @@
     @import "_previews.scss";
 
     // Components
-    @import "components/_action_message.scss";
     @import "components/_breadcrumb.scss";
-    @import "components/_context_menu.scss";
     @import "components/_explorer.scss";
-    @import "components/_drag_item.scss";
-    @import "components/_folder_indicator.scss";
-    @import "components/_folder_loader_indicator.scss";
-    @import "components/_item.scss";
-    @import "components/_item_icon.scss";
     @import "components/_linear_loader.scss";
-    @import "components/_message.scss";
-    @import "components/_statusbar.scss";
     @import "components/_tree_view.scss";
-    @import "components/_toast.scss";
     @import "components/_toolbar.scss";
-    @import "components/_vuefinder.scss";
 
     // Modals
     @import "components/modals/_modal__layout.scss";

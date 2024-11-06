@@ -1,15 +1,14 @@
 <template>
-  <ul ref="contextmenu" v-show="context.active" :style="context.positions"
-      class="vuefinder__context-menu">
-    <li class="vuefinder__context-menu__item" v-for="(item) in filteredItems" :key="item.title">
+  <ul ref="contextmenu" v-show="context.active" :style="context.positions" class="context-menu">
+    <li class="item" v-for="(item) in filteredItems" :key="item.title">
       <template v-if="item.link">
-        <a class="vuefinder__context-menu__link" target="_blank" :href="item.link" :download="item.link"
-           @click="app.emitter.emit('vf-contextmenu-hide')">
+        <a class="link" target="_blank" :href="item.link" :download="item.link"
+          @click="app.emitter.emit('vf-contextmenu-hide')">
           <span>{{ item.title() }}</span>
         </a>
       </template>
       <template v-else>
-        <div class="vuefinder__context-menu__action" @click="run(item)">
+        <div class="action" @click="run(item)">
           <span>{{ item.title() }}</span>
         </div>
       </template>
@@ -17,9 +16,9 @@
   </ul>
 </template>
 
-<script setup>
-import {computed, inject, nextTick, reactive, ref} from 'vue';
-import {FEATURES} from "../features.js";
+<script setup lang="ts">
+import { computed, inject, nextTick, reactive, ref } from 'vue';
+import { FEATURES } from "../features.js";
 import ModalNewFolder from "./modals/ModalNewFolder.vue";
 import ModalPreview from "./modals/ModalPreview.vue";
 import ModalArchive from "./modals/ModalArchive.vue";
@@ -28,7 +27,7 @@ import ModalRename from "./modals/ModalRename.vue";
 import ModalDelete from "./modals/ModalDelete.vue";
 
 const app = inject('ServiceContainer');
-const {t} = app.i18n
+const { t } = app.i18n
 
 const contextmenu = ref(null);
 const selectedItems = ref([]);
@@ -64,35 +63,35 @@ const menuItems = {
   pinFolder: {
     title: () => t('Pin Folder'),
     action: () => {
-        app.pinnedFolders = app.pinnedFolders.concat(selectedItems.value);
-        app.storage.setStore('pinned-folders', app.pinnedFolders);
+      app.pinnedFolders = app.pinnedFolders.concat(selectedItems.value);
+      app.storage.setStore('pinned-folders', app.pinnedFolders);
     },
   },
 
   unpinFolder: {
     title: () => t('Unpin Folder'),
     action: () => {
-        app.pinnedFolders = app.pinnedFolders.filter(fav => !selectedItems.value.find(item => item.path === fav.path));
-        app.storage.setStore('pinned-folders', app.pinnedFolders);
+      app.pinnedFolders = app.pinnedFolders.filter(fav => !selectedItems.value.find(item => item.path === fav.path));
+      app.storage.setStore('pinned-folders', app.pinnedFolders);
     },
   },
   delete: {
     key: FEATURES.DELETE,
     title: () => t('Delete'),
     action: () => {
-      app.modal.open(ModalDelete, {items: selectedItems});
+      app.modal.open(ModalDelete, { items: selectedItems });
     },
   },
   refresh: {
     title: () => t('Refresh'),
     action: () => {
-      app.emitter.emit('vf-fetch', {params: {q: 'index', adapter: app.fs.adapter, path: app.fs.data.dirname}});
+      app.emitter.emit('vf-fetch', { params: { q: 'index', adapter: app.fs.adapter, path: app.fs.data.dirname } });
     },
   },
   preview: {
     key: FEATURES.PREVIEW,
     title: () => t('Preview'),
-    action: () => app.modal.open(ModalPreview, {adapter: app.fs.adapter, item: selectedItems.value[0]}),
+    action: () => app.modal.open(ModalPreview, { adapter: app.fs.adapter, item: selectedItems.value[0] }),
   },
   open: {
     title: () => t('Open'),
@@ -130,17 +129,17 @@ const menuItems = {
   archive: {
     key: FEATURES.ARCHIVE,
     title: () => t('Archive'),
-    action: () => app.modal.open(ModalArchive, {items: selectedItems}),
+    action: () => app.modal.open(ModalArchive, { items: selectedItems }),
   },
   unarchive: {
     key: FEATURES.UNARCHIVE,
     title: () => t('Unarchive'),
-    action: () => app.modal.open(ModalUnarchive, {items: selectedItems}),
+    action: () => app.modal.open(ModalUnarchive, { items: selectedItems }),
   },
   rename: {
     key: FEATURES.RENAME,
     title: () => t('Rename'),
-    action: () => app.modal.open(ModalRename, {items: selectedItems}),
+    action: () => app.modal.open(ModalRename, { items: selectedItems }),
   }
 };
 
@@ -150,11 +149,11 @@ const run = (item) => {
 };
 
 
-app.emitter.on('vf-search-query', ({newQuery}) => {
+app.emitter.on('vf-search-query', ({ newQuery }) => {
   searchQuery.value = newQuery;
 });
 
-app.emitter.on('vf-contextmenu-show', ({event, items, target = null}) => {
+app.emitter.on('vf-contextmenu-show', ({ event, items, target = null }) => {
   context.items = [];
 
   if (searchQuery.value) {
@@ -236,3 +235,21 @@ const showContextMenu = (event) => {
 };
 
 </script>
+
+<style lang="postcss" scoped>
+.context-menu {
+  @apply z-30 absolute text-xs bg-neutral-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-neutral-400 dark:border-gray-600 shadow rounded-sm select-none;
+
+  & .item {
+    @apply cursor-pointer hover:bg-neutral-200 dark:hover:bg-gray-700;
+  }
+
+  & .link {
+    @apply block pl-2 pr-3 py-2;
+  }
+
+  & .action {
+    @apply pl-2 pr-3 py-1.5;
+  }
+}
+</style>
