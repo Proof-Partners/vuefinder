@@ -1,22 +1,30 @@
-import {defineConfig} from 'vite'
-import {resolve} from 'path'
+import { defineConfig } from 'vite'
+import { resolve } from 'path'
 import vue from '@vitejs/plugin-vue'
+import vueDevTools from 'vite-plugin-vue-devtools'
+
 import copy from 'rollup-plugin-copy'
 import svgLoader from 'vite-svg-loader'
 
 export default defineConfig({
     plugins: [
         vue(),
+        vueDevTools(),
         svgLoader(),
         copy({
             targets: [
-                {src: 'src/locales/*', dest: 'dist/locales'},
-                {src: 'src/features.js', dest: 'dist'},
+                { src: 'src/locales/*', dest: 'dist/locales' },
+                { src: 'src/features.js', dest: 'dist' },
             ],
             hook: "writeBundle",
         })
     ],
-   css: {
+    resolve: {
+        alias: {
+            '@': resolve(__dirname, 'src'),
+        },
+    },
+    css: {
         preprocessorOptions: {
             scss: {
                 api: 'modern-compiler', // or 'modern'
