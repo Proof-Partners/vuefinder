@@ -23,38 +23,29 @@
 </template>
 
 <script setup lang="ts">
-import { inject, onMounted, provide, ref, watch } from 'vue';
-import ServiceContainer from "../ServiceContainer.js";
+import { inject, onMounted, provide, watch, useTemplateRef } from 'vue';
+import ServiceContainer, { type ServiceContainerProps } from "../ServiceContainer.js";
 import { useHotkeyActions } from "../composables/useHotkeyActions.js";
 
-import Toolbar from '../components/Toolbar.vue';
-import Breadcrumb from '../components/Breadcrumb.vue';
-import Explorer from '../components/Explorer.vue';
+import Toolbar from './ToolBar.vue';
+import Breadcrumb from './BreadcrumbBar.vue';
+import Explorer from './FileExplorer.vue';
 import ContextMenu from '../components/ContextMenu.vue';
-import Statusbar from '../components/Statusbar.vue';
+import Statusbar from './StatusBar.vue';
 import TreeView from '../components/TreeView.vue';
+import type useData from '@/composables/useData.js';
 
 const emit = defineEmits(['select', 'update:path'])
 
-const { id = 'vf', features = true, theme = 'system', maxHeight = '600px', maxFileSize = '10mb', pinnedFolders = [], loadingIndicator = 'circular', ...rest } = defineProps<{
-  id?: string,
-  request: string | object,
-  persist?: boolean,
-  path?: string,
-  features?: boolean | string[],
-  debug?: boolean,
-  theme?: string,
-  locale?: string,
-  maxHeight?: string,
-  maxFileSize: string,
-  fullScreen?: boolean,
-  showTreeView?: boolean,
-  pinnedFolders?: string[],
-  showThumbnails?: boolean, // was default = false
-  selectButton?: object, // too complex to define
-  onError?: Function, // should be an emit, no?
-  loadingIndicator?: string,
-}>();
+const {
+  id = 'vf',
+  theme = 'system',
+  maxHeight = '600px',
+  maxFileSize = '10mb',
+  pinnedFolders = [],
+  loadingIndicator = 'circular',
+  ...rest
+} = defineProps<ServiceContainerProps & { maxHeight?: string | number, onError?: (e: unknown) => void }>();
 
 // selectButton: {
 //   type: Object,
@@ -75,29 +66,25 @@ const { id = 'vf', features = true, theme = 'system', maxHeight = '600px', maxFi
 //   default: null,
 // },
 
+const root = useTemplateRef('root');
 
 // the object is passed to all components as props
-const app = ServiceContainer({ id, features, theme, maxHeight, maxFileSize, pinnedFolders, loadingIndicator, ...rest }, inject('VueFinderOptions'));
+const app = ServiceContainer({ ...rest, id, root, theme, maxFileSize, pinnedFolders, loadingIndicator }, inject('VueFinderOptions'));
 provide('ServiceContainer', app);
 const { setStore } = app.storage;
-
-//  Define root element
-const root = ref(null);
-app.root = root;
 
 // Define dragSelect object
 const ds = app.dragSelect;
 
 useHotkeyActions(app);
 
-const updateItems = (data) => {
+const updateItems = (data: typeof useData) => {
   Object.assign(app.fs.data, data);
   ds.clearSelection();
   ds.refreshSelection();
 };
 
-/** @type {AbortController} */
-let controller;
+let controller: AbortController;
 app.emitter.on('vf-fetch-abort', () => {
   controller.abort();
   app.fs.loading = false;
@@ -116,43 +103,42 @@ app.emitter.on('vf-fetch', ({ params, body = null, onSuccess = null, onError = n
   const signal = controller.signal;
   app.requester.send({
     url: '',
-    method: params.m || 'get',
+    method: params.m ?? 'get',
     params,
     body,
     abortSignal: signal,
-  }).then(data => {
-    app.fs.adapter = data.adapter;
-    if (app.persist) {
-      app.fs.path = data.dirname;
-      setStore('path', app.fs.path);
-    }
+  })
+    .then((res) => res.json())
+    .then(data => {
+      app.fs.adapter = data.adapter;
+      if (app.persist) {
+        app.fs.path = data.dirname;
+        setStore('path', app.fs.path);
+      }
 
 
-    if (!noCloseModal) {
-      app.modal.close();
-    }
-    updateItems(data);
-    if (onSuccess) {
-      onSuccess(data);
-    }
-  }).catch((e) => {
-    console.error(e)
-    if (onError) {
-      onError(e);
-    }
-  }).finally(() => {
-    if (['index', 'search'].includes(params.q)) {
-      app.fs.loading = false;
-    }
-  });
+      if (!noCloseModal) {
+        app.modal.close();
+      }
+      updateItems(data);
+      if (onSuccess) {
+        onSuccess(data);
+      }
+    })
+    .catch((e) => {
+      console.error(e)
+      if (onError) {
+        onError(e);
+      }
+    })
+    .finally(() => {
+      if (['index', 'search'].includes(params.q)) {
+        app.fs.loading = false;
+      }
+    });
 });
 
-/**
- * fetchPath fetches the items of the given path
- * if no path is given, the backend should return the root of the current adapter
- * @param path {string | undefined} example: 'media://public'
- */
-function fetchPath(path) {
+function fetchPath(path?: string) {
   let pathExists = {};
 
   if (path && path.includes("://")) {

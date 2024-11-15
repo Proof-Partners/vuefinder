@@ -31,20 +31,27 @@
               <span class="vuefinder__upload-modal__file-icon-text" v-text="getIconForEntry(entry)"></span>
             </span>
             <div class="vuefinder__upload-modal__file-info">
-              <div class="vuefinder__upload-modal__file-name hidden md:block">{{ title_shorten(entry.name, 40) }} ({{ entry.size }})</div>
-              <div class="vuefinder__upload-modal__file-name md:hidden">{{ title_shorten(entry.name, 16) }} ({{ entry.size }})</div>
+              <div class="vuefinder__upload-modal__file-name hidden md:block">{{ title_shorten(entry.name, 40) }} ({{
+                entry.size }})</div>
+              <div class="vuefinder__upload-modal__file-name md:hidden">{{ title_shorten(entry.name, 16) }} ({{
+                entry.size }})</div>
               <div class="vuefinder__upload-modal__file-status" :class="getClassNameForEntry(entry)">
                 {{ entry.statusName }}
-                <b class="ml-auto" v-if="entry.status === definitions.QUEUE_ENTRY_STATUS.UPLOADING">{{ entry.percent }}</b>
+                <b class="ml-auto" v-if="entry.status === definitions.QUEUE_ENTRY_STATUS.UPLOADING">{{ entry.percent
+                  }}</b>
               </div>
             </div>
-            <button type="button" class="vuefinder__upload-modal__file-remove" :class="uploading ? 'disabled' : ''" :title="t('Delete')" :disabled="uploading" @click="remove(entry)">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="vuefinder__upload-modal__file-remove-icon"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
+            <button type="button" class="vuefinder__upload-modal__file-remove" :class="uploading ? 'disabled' : ''"
+              :title="t('Delete')" :disabled="uploading" @click="remove(entry)">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                stroke="currentColor" class="vuefinder__upload-modal__file-remove-icon">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
             </button>
           </div>
           <div class="py-2" v-if="!queue.length">{{ t('No files selected!') }}</div>
         </div>
-        <message v-if="message.length" @hidden="message=''" error>{{ message }}</message>
+        <SimpleMessage v-if="message.length" @hidden="message = ''" error>{{ message }}</SimpleMessage>
       </div>
     </div>
     <input ref="internalFileInput" type="file" multiple class="hidden">
@@ -54,27 +61,29 @@
       <button type="button" class="vf-btn vf-btn-primary" :disabled="uploading" @click.prevent="upload">
         {{ t('Upload') }}
       </button>
-      <button type="button" class="vf-btn vf-btn-secondary" v-if="uploading" @click.prevent="cancel">{{ t('Cancel') }}</button>
+      <button type="button" class="vf-btn vf-btn-secondary" v-if="uploading" @click.prevent="cancel">{{ t('Cancel')
+        }}</button>
       <button type="button" class="vf-btn vf-btn-secondary" v-else @click.prevent="close">{{ t('Close') }}</button>
     </template>
   </ModalLayout>
 </template>
 
-<script setup>
-import Uppy from '@uppy/core';
+<script setup lang="ts">
+import Uppy, { type Locale, type FileProgress, type UppyFile, type ErrorResponse, type FailedUppyFile } from '@uppy/core';
 import XHR from '@uppy/xhr-upload';
 import ModalLayout from './ModalLayout.vue';
-import { inject, onBeforeUnmount, onMounted, ref } from 'vue';
-import Message from '../Message.vue';
-import { parse } from '../../utils/filesize.js';
-import title_shorten from "../../utils/title_shorten.js";
+import { inject, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue';
+import SimpleMessage from '@/components/SimpleMessage.vue';
+import { parse } from '@/utils/filesize.js';
+import title_shorten from "@/utils/title_shorten.js";
 import ModalHeader from "./ModalHeader.vue";
-import UploadSVG from "../icons/upload.svg";
+import UploadSVG from "@/icons/upload.svg";
+import type { ServiceContainer } from '@/ServiceContainer';
 
-const app = inject('ServiceContainer');
-const {t} = app.i18n;
+const app = inject<ServiceContainer>('ServiceContainer')!;
+const { t } = app.i18n;
 
-const uppyLocale = t("uppy");
+const uppyLocale: Locale = t("uppy") as unknown as Locale;
 
 const QUEUE_ENTRY_STATUS = {
   PENDING: 0,
@@ -85,18 +94,12 @@ const QUEUE_ENTRY_STATUS = {
 }
 const definitions = ref({ QUEUE_ENTRY_STATUS })
 
-/** @type {import('vue').Ref<HTMLDivElement>} */
-const container = ref(null);
-/** @type {import('vue').Ref<HTMLInputElement>} */
-const internalFileInput = ref(null);
-/** @type {import('vue').Ref<HTMLInputElement>} */
-const internalFolderInput = ref(null);
-/** @type {import('vue').Ref<HTMLButtonElement>} */
-const pickFiles = ref(null);
-/** @type {import('vue').Ref<HTMLButtonElement>} */
-const pickFolders = ref(null);
-/** @type {import('vue').Ref<HTMLDivElement>} */
-const dropArea = ref(null);
+const container = useTemplateRef('container');
+const internalFileInput = useTemplateRef('internalFileInput');
+const internalFolderInput = useTemplateRef('internalFolderInput');
+const pickFiles = useTemplateRef('pickFiles');
+const pickFolders = useTemplateRef('pickFolders');
+const dropArea = useTemplateRef('dropArea');
 /**
  * @typedef {Object} QueueEntry
  * @property {String} id
@@ -107,35 +110,30 @@ const dropArea = ref(null);
  * @property {String} statusName Status name
  * @property {File} originalFile
  */
-/** @type {import('vue').Ref<QueueEntry[]>} */
-const queue = ref([]);
+type QueueEntry = {
+  id: string,
+  name: string,
+  size: string,
+  percent?: string,
+  status: number,
+  statusName: string,
+  originalFile: UppyFile,
+};
+
+const queue = ref<QueueEntry[]>([]);
 const message = ref('');
 const uploading = ref(false);
 const hasFilesInDropArea = ref(false);
 
-/**
- * Uploader instance
- * @type {?Uppy}
- */
-let uppy;
 
-/**
- * Find queue entry index by id
- *
- * <p>Yes calling this function is slow, but nobody is gonna use our stuff to upload over 100k files.</p>
- * @param {String} id
- * @return number index in queue
- */
-function findQueueEntryIndexById(id) {
+let uppy: Uppy;
+
+
+function findQueueEntryIndexById(id: string) {
   return queue.value.findIndex((item) => item.id === id);
 }
 
-/**
- * Add file to uppy
- * @param {File} file
- * @param {?String} name file name with full relative path (like "dirA/dirB/file.xlsx" or just "file.xlsx")
- */
-function addFile(file, name = null) {
+function addFile(file: UppyFile, name?: string) {
   name = name != null ? name : (file.webkitRelativePath || file.name);
   uppy.addFile({
     name,
@@ -145,11 +143,7 @@ function addFile(file, name = null) {
   });
 }
 
-/**
- * Get dom class for entry
- * @param {QueueEntry} entry
- */
-function getClassNameForEntry(entry) {
+function getClassNameForEntry(entry: QueueEntry) {
   switch (entry.status) {
     case QUEUE_ENTRY_STATUS.DONE:
       return 'text-green-600'
@@ -163,7 +157,7 @@ function getClassNameForEntry(entry) {
   }
 }
 
-const getIconForEntry = (entry) =>{
+const getIconForEntry = (entry: QueueEntry) => {
   switch (entry.status) {
     case QUEUE_ENTRY_STATUS.DONE:
       return '✓'
@@ -180,7 +174,7 @@ const getIconForEntry = (entry) =>{
  * Open file selector
  */
 function openFileSelector() {
-  pickFiles.value.click();
+  pickFiles.value!.click();
 }
 
 /**
@@ -213,11 +207,7 @@ function cancel() {
   uploading.value = false;
 }
 
-/**
- * Remove a file from queue
- * @param {QueueEntry} file
- */
-function remove(file) {
+function remove(file: QueueEntry) {
   if (uploading.value) {
     return;
   }
@@ -225,17 +215,13 @@ function remove(file) {
   queue.value.splice(findQueueEntryIndexById(file.id), 1);
 }
 
-/**
- * Clear queue
- * @param {boolean} onlySuccessful
- */
-function clear(onlySuccessful) {
+function clear(onlySuccessful: boolean) {
   if (uploading.value) {
     return;
   }
   uppy.cancelAll({ reason: 'user' });
   if (onlySuccessful) {
-    const retryQueue = [];
+    const retryQueue: QueueEntry[] = [];
     queue.value.forEach(entry => {
       if (entry.status !== QUEUE_ENTRY_STATUS.DONE) {
         retryQueue.push(entry);
@@ -261,7 +247,7 @@ function buildReqParams() {
   return app.requester.transformRequestParams({
     url: '',
     method: 'post',
-    params: { q: 'upload', adapter: app.fs.adapter, path: app.fs.data.dirname },
+    params: { q: 'upload', adapter: app.fs.adapter.value, path: app.fs.data.dirname },
   });
 }
 
@@ -269,11 +255,11 @@ onMounted(async () => {
   uppy = new Uppy({
     debug: app.debug,
     restrictions: {
-      maxFileSize: parse(app.maxFileSize),
+      maxFileSize: parse(`${app.maxFileSize}`), //TOD is this correct?
       //maxNumberOfFiles
       //allowedFileTypes
     },
-    locale: uppyLocale,
+    locale: uppyLocale as unknown as Locale<string>,
     onBeforeFileAdded(file, files) {
       const duplicated = files[file.id] != null;
       if (duplicated) {
@@ -291,7 +277,6 @@ onMounted(async () => {
         size: app.filesize(file.size),
         status: QUEUE_ENTRY_STATUS.PENDING,
         statusName: t('Pending upload'),
-        percent: null,
         originalFile: file.data,
       });
       return true;
@@ -303,15 +288,13 @@ onMounted(async () => {
     endpoint: 'WILL_BE_REPLACED_BEFORE_UPLOAD',
     limit: 5,
     timeout: 0,
-    getResponseError(responseText, _response) {
-      /** @type {String} */
-      let message;
+    getResponseError(responseText: string) {
+      let message: string;
       try {
-        /** @type {*} */
         const body = JSON.parse(responseText);
         message = body.message;
-      } catch (e) {
-        message = t('Cannot parse server response.');
+      } catch (e: unknown) {
+        message = t('Cannot parse server response.') + e;
       }
       return new Error(message);
     },
@@ -325,35 +308,35 @@ onMounted(async () => {
   uppy.on('upload', () => {
     const reqParams = buildReqParams();
     uppy.setMeta({ ...reqParams.body });
-    const xhrPlugin = uppy.getPlugin('XHRUpload');
+    const xhrPlugin = uppy.getPlugin('XHRUpload')!;
     xhrPlugin.opts.method = reqParams.method;
-    xhrPlugin.opts.endpoint = reqParams.url + '?' + new URLSearchParams(reqParams.params);
-    xhrPlugin.opts.headers = reqParams.headers;
-    delete reqParams.headers['Content-Type'];
+    xhrPlugin.opts.endpoint = reqParams.url + '?' + new URLSearchParams(Object.entries(reqParams.params || {}).map(([k, v]) => [k, v?.toString() || '']));
+    xhrPlugin.opts.headers = { ...reqParams.headers };
+    delete xhrPlugin.headers['Content-Type'];
     uploading.value = true;
     queue.value.forEach(file => {
       if (file.status === QUEUE_ENTRY_STATUS.DONE) {
         return;
       }
-      file.percent = null;
+      file.percent = undefined;
       file.status = QUEUE_ENTRY_STATUS.UPLOADING;
       file.statusName = t('Pending upload');
     });
   });
-  uppy.on('upload-progress', (upFile, progress) => {
+  uppy.on('upload-progress', (upFile: UppyFile, progress: FileProgress) => {
     // upFile.progress.percentage never updates itself during this callback, and progress param definition showed
     // some non exist properties, weird.
     const p = Math.floor(progress.bytesUploaded / progress.bytesTotal * 100);
     queue.value[findQueueEntryIndexById(upFile.id)].percent = `${p}%`;
   });
-  uppy.on('upload-success',(upFile) => {
+  uppy.on('upload-success', (upFile: UppyFile) => {
     const entry = queue.value[findQueueEntryIndexById(upFile.id)];
     entry.status = QUEUE_ENTRY_STATUS.DONE;
     entry.statusName = t('Done');
   });
-  uppy.on('upload-error', (upFile, error) => {
+  uppy.on('upload-error', (upFile: UppyFile, error: Error) => {
     const entry = queue.value[findQueueEntryIndexById(upFile.id)];
-    entry.percent = null;
+    entry.percent = undefined;
     entry.status = QUEUE_ENTRY_STATUS.ERROR;
     // https://uppy.io/docs/uppy/#upload-error
     // noinspection JSUnresolvedReference

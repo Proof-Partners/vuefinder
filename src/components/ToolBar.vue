@@ -66,28 +66,29 @@
 
 <script setup lang="ts">
 import { inject, ref, watch } from 'vue';
-import { FEATURES } from "../features.js";
-import ModalNewFolder from "./modals/ModalNewFolder.vue";
-import ModalNewFile from "./modals/ModalNewFile.vue";
-import ModalRename from "./modals/ModalRename.vue";
-import ModalDelete from "./modals/ModalDelete.vue";
-import ModalUpload from "./modals/ModalUpload.vue";
-import ModalUnarchive from "./modals/ModalUnarchive.vue";
-import ModalArchive from "./modals/ModalArchive.vue";
-import NewFolderSVG from "./icons/new_folder.svg";
-import NewFileSVG from "./icons/new_file.svg";
-import RenameSVG from "./icons/rename.svg";
-import DeleteSVG from "./icons/delete.svg";
-import UploadSVG from "./icons/upload.svg";
-import ArchiveSVG from "./icons/archive.svg";
-import UnarchiveSVG from "./icons/unarchive.svg";
-import LoadingSVG from "./icons/loading.svg";
-import FullscreenSVG from "./icons/full_screen.svg";
-import MinimizeSVG from "./icons/minimize.svg";
-import GridViewSVG from "./icons/grid_view.svg";
-import ListViewSVG from "./icons/list_view.svg";
+import { FEATURES } from "@/features.js";
+import ModalNewFolder from "@/views/modals/ModalNewFolder.vue";
+import ModalNewFile from "@/views/modals/ModalNewFile.vue";
+import ModalRename from "@/views/modals/ModalRename.vue";
+import ModalDelete from "@/views/modals/ModalDelete.vue";
+import ModalUpload from "@/views/modals/ModalUpload.vue";
+import ModalUnarchive from "@/views/modals/ModalUnarchive.vue";
+import ModalArchive from "@/views/modals/ModalArchive.vue";
+import NewFolderSVG from "@/icons/new_folder.svg";
+import NewFileSVG from "@/icons/new_file.svg";
+import RenameSVG from "@/icons/rename.svg";
+import DeleteSVG from "@/icons/delete.svg";
+import UploadSVG from "@/icons/upload.svg";
+import ArchiveSVG from "@/icons/archive.svg";
+import UnarchiveSVG from "@/icons/unarchive.svg";
+import LoadingSVG from "@/icons/loading.svg";
+import FullscreenSVG from "@/icons/full_screen.svg";
+import MinimizeSVG from "@/icons/minimize.svg";
+import GridViewSVG from "@/icons/grid_view.svg";
+import ListViewSVG from "@/icons/list_view.svg";
+import type { ServiceContainer } from '@/ServiceContainer';
 
-const app = inject('ServiceContainer');
+const app = inject<ServiceContainer>('ServiceContainer')!;
 const { setStore } = app.storage;
 const { t } = app.i18n;
 
@@ -105,10 +106,10 @@ const toggleFullScreen = () => {
 watch(() => app.fullScreen, () => {
   if (app.fullScreen) {
     // add body overflow hidden
-    document.querySelector('body').style.overflow = 'hidden';
+    document.querySelector('body')!.style.overflow = 'hidden';
   } else {
     // remove body overflow hidden
-    document.querySelector('body').style.overflow = '';
+    document.querySelector('body')!.style.overflow = '';
   }
   setStore('full-screen', app.fullScreen);
   app.emitter.emit('vf-fullscreen-toggle');
@@ -118,7 +119,7 @@ watch(() => app.fullScreen, () => {
 const toggleView = () => {
   app.view = app.view === 'list' ? 'grid' : 'list';
 
-  ds.refreshSelection();
+  ds.value.refreshSelection();
   setStore('viewport', app.view)
 };
 

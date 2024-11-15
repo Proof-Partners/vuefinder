@@ -6,17 +6,22 @@
         <div class="vuefinder__delete-modal__form">
           <p class="vuefinder__delete-modal__description">{{ t('Are you sure you want to delete these files?') }}</p>
           <div class="vuefinder__delete-modal__files vf-scrollbar">
-            <p v-for="item in items" class="vuefinder__delete-modal__file">
-              <svg v-if="item.type === 'dir'" class="vuefinder__delete-modal__icon vuefinder__delete-modal__icon--dir" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+            <p v-for="item in items" class="vuefinder__delete-modal__file" :key="item.name">
+              <svg v-if="item.type === 'dir'" class="vuefinder__delete-modal__icon vuefinder__delete-modal__icon--dir"
+                xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                stroke-width="1">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
               </svg>
-              <svg v-else class="vuefinder__delete-modal__icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              <svg v-else class="vuefinder__delete-modal__icon" xmlns="http://www.w3.org/2000/svg" fill="none"
+                viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
               </svg>
               <span class="vuefinder__delete-modal__file-name">{{ item.basename }}</span>
             </p>
           </div>
-          <message v-if="message.length" @hidden="message=''" error>{{ message }}</message>
+          <SimpleMessage v-if="message.length" @hidden="message = ''" error>{{ message }}</SimpleMessage>
         </div>
       </div>
     </div>
@@ -29,17 +34,19 @@
   </ModalLayout>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import ModalLayout from './ModalLayout.vue';
-import {inject, ref} from 'vue';
-import Message from '../Message.vue';
+import { inject, ref } from 'vue';
+import SimpleMessage from '@/components/SimpleMessage.vue';
 import ModalHeader from "./ModalHeader.vue";
 import DeleteSVG from "../icons/delete.svg";
+import type { ServiceContainer } from '@/ServiceContainer';
+import type { Item } from '@/composables/useData';
 
-const app = inject('ServiceContainer');
-const {t} = app.i18n;
+const app = inject<ServiceContainer>('ServiceContainer')!;
+const { t } = app.i18n;
 
-const items = ref(app.modal.data.items);
+const items = ref<Item[]>(app.modal.data.value.items);
 const message = ref('');
 
 const remove = () => {
@@ -49,14 +56,14 @@ const remove = () => {
       params: {
         q: 'delete',
         m: 'post',
-        adapter: app.fs.adapter,
+        adapter: app.fs.adapter.value,
         path: app.fs.data.dirname,
       },
       body: {
-        items: items.value.map(({path, type}) => ({path, type})),
+        items: items.value.map(({ path, type }) => ({ path, type })),
       },
       onSuccess: () => {
-        app.emitter.emit('vf-toast-push', {label: t('Files deleted.')});
+        app.emitter.emit('vf-toast-push', { label: t('Files deleted.') });
       },
       onError: (e) => {
         message.value = t(e.message);

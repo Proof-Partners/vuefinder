@@ -12,7 +12,7 @@ import SquarePlusSVG from "./icons/plus.svg";
 import SquareMinusSVG from "./icons/minus.svg";
 
 // TODO what does the value represent?
-const model = defineModel<bool>();
+const model = defineModel<boolean>();
 
 </script>
 

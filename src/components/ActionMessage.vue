@@ -7,14 +7,17 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, inject } from 'vue';
+import type { Timeout } from '@/composables/useDebouncedRef';
+import type { ServiceContainer } from '@/ServiceContainer';
+import type { Events } from '@/composables/useEmit';
 
-defineProps<{ on: string }>();
+const props = defineProps<{ on: keyof Events }>();
 
-const app = inject('ServiceContainer');
+const app = inject<ServiceContainer>('ServiceContainer')!;
 const shown = ref(false);
 const { t } = app.i18n;
 
-let timeout = null;
+let timeout: Timeout;
 
 const handleEvent = () => {
   clearTimeout(timeout);

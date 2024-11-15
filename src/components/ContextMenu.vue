@@ -4,12 +4,12 @@
       <template v-if="item.link">
         <a class="link" target="_blank" :href="item.link" :download="item.link"
           @click="app.emitter.emit('vf-contextmenu-hide')">
-          <span>{{ item.title() }}</span>
+          <span>{{ item.title }}</span>
         </a>
       </template>
       <template v-else>
         <div class="action" @click="run(item)">
-          <span>{{ item.title() }}</span>
+          <span>{{ item.title }}</span>
         </div>
       </template>
     </li>
@@ -18,27 +18,38 @@
 
 <script setup lang="ts">
 import { computed, inject, nextTick, reactive, ref } from 'vue';
-import { FEATURES } from "../features.js";
-import ModalNewFolder from "./modals/ModalNewFolder.vue";
-import ModalPreview from "./modals/ModalPreview.vue";
-import ModalArchive from "./modals/ModalArchive.vue";
-import ModalUnarchive from "./modals/ModalUnarchive.vue";
-import ModalRename from "./modals/ModalRename.vue";
-import ModalDelete from "./modals/ModalDelete.vue";
+import { FEATURES } from "@/features.js";
+import ModalNewFolder from "@/views/modals/ModalNewFolder.vue";
+import ModalPreview from "@/views/modals/ModalPreview.vue";
+import ModalArchive from "@/views/modals/ModalArchive.vue";
+import ModalUnarchive from "@/views/modals/ModalUnarchive.vue";
+import ModalRename from "@/views/modals/ModalRename.vue";
+import ModalDelete from "@/views/modals/ModalDelete.vue";
+import type { ServiceContainer } from '@/ServiceContainer';
+import type { Item } from '@/composables/useData';
 
-const app = inject('ServiceContainer');
+// TODO find out what Thing really is
+type MenuItem = {
+  readonly title: string;
+  action: () => void;
+  readonly link?: string;
+  readonly key?: FEATURES;
+}
+
+
+const app = inject<ServiceContainer>('ServiceContainer')!;
 const { t } = app.i18n
 
-const contextmenu = ref(null);
-const selectedItems = ref([]);
+const contextmenu = ref<HTMLElement | null>(null);
+const selectedItems = ref<Item[]>([]);
 const searchQuery = ref('');
 
 const context = reactive({
   active: false,
-  items: [],
+  items: [] as MenuItem[],
   positions: {
-    left: 0,
-    top: 0
+    left: '0',
+    top: '0'
   }
 });
 
@@ -46,22 +57,22 @@ const filteredItems = computed(() => {
   return context.items.filter(item => item.key == null || app.features.includes(item.key))
 });
 
-app.emitter.on('vf-context-selected', (items) => {
+app.emitter.on('vf-context-selected', (items: Item[]) => {
   selectedItems.value = items;
-})
+});
 
-const menuItems = {
+const menuItems: Record<string, MenuItem> = {
   newfolder: {
     key: FEATURES.NEW_FOLDER,
-    title: () => t('New Folder'),
+    get title() { return t('New Folder'); },
     action: () => app.modal.open(ModalNewFolder),
   },
   selectAll: {
-    title: () => t('Select All'),
-    action: () => app.dragSelect.selectAll(),
+    get title() { return t('Select All'); },
+    action: () => app.dragSelect.value.selectAll(),
   },
   pinFolder: {
-    title: () => t('Pin Folder'),
+    get title() { return t('Pin Folder'); },
     action: () => {
       app.pinnedFolders = app.pinnedFolders.concat(selectedItems.value);
       app.storage.setStore('pinned-folders', app.pinnedFolders);
@@ -69,7 +80,7 @@ const menuItems = {
   },
 
   unpinFolder: {
-    title: () => t('Unpin Folder'),
+    get title() { return t('Unpin Folder'); },
     action: () => {
       app.pinnedFolders = app.pinnedFolders.filter(fav => !selectedItems.value.find(item => item.path === fav.path));
       app.storage.setStore('pinned-folders', app.pinnedFolders);
@@ -77,24 +88,24 @@ const menuItems = {
   },
   delete: {
     key: FEATURES.DELETE,
-    title: () => t('Delete'),
+    get title() { return t('Delete'); },
     action: () => {
       app.modal.open(ModalDelete, { items: selectedItems });
     },
   },
   refresh: {
-    title: () => t('Refresh'),
+    get title() { return t('Refresh'); },
     action: () => {
       app.emitter.emit('vf-fetch', { params: { q: 'index', adapter: app.fs.adapter, path: app.fs.data.dirname } });
     },
   },
   preview: {
     key: FEATURES.PREVIEW,
-    title: () => t('Preview'),
+    get title() { return t('Preview'); },
     action: () => app.modal.open(ModalPreview, { adapter: app.fs.adapter, item: selectedItems.value[0] }),
   },
   open: {
-    title: () => t('Open'),
+    get title() { return t('Open'); },
     action: () => {
       app.emitter.emit('vf-search-exit');
       app.emitter.emit('vf-fetch', {
@@ -107,43 +118,44 @@ const menuItems = {
     },
   },
   openDir: {
-    title: () => t('Open containing folder'),
+    get title() { return t('Open containing folder'); },
     action: () => {
+      const path = selectedItems.value[0].path.split('/').slice(0, -1).join('/');
       app.emitter.emit('vf-search-exit');
       app.emitter.emit('vf-fetch', {
         params: {
           q: 'index',
           adapter: app.fs.adapter,
-          path: (selectedItems.value[0].dir)
+          path,
         }
       });
     },
   },
   download: {
     key: FEATURES.DOWNLOAD,
-    link: computed(() => app.requester.getDownloadUrl(app.fs.adapter, selectedItems.value[0])),
-    title: () => t('Download'),
+    get link() { return app.requester.getDownloadUrl(app.fs.adapter.value, selectedItems.value[0]); },
+    get title() { return t('Download'); },
     action: () => {
     },
   },
   archive: {
     key: FEATURES.ARCHIVE,
-    title: () => t('Archive'),
+    get title() { return t('Archive'); },
     action: () => app.modal.open(ModalArchive, { items: selectedItems }),
   },
   unarchive: {
     key: FEATURES.UNARCHIVE,
-    title: () => t('Unarchive'),
+    get title() { return t('Unarchive'); },
     action: () => app.modal.open(ModalUnarchive, { items: selectedItems }),
   },
   rename: {
     key: FEATURES.RENAME,
-    title: () => t('Rename'),
+    get title() { return t('Rename'); },
     action: () => app.modal.open(ModalRename, { items: selectedItems }),
   }
 };
 
-const run = (item) => {
+const run = (item: MenuItem) => {
   app.emitter.emit('vf-contextmenu-hide');
   item.action();
 };
@@ -153,24 +165,24 @@ app.emitter.on('vf-search-query', ({ newQuery }) => {
   searchQuery.value = newQuery;
 });
 
-app.emitter.on('vf-contextmenu-show', ({ event, items, target = null }) => {
+app.emitter.on('vf-contextmenu-show', ({ event, items, target }: { event: MouseEvent, items: Item[], target?: Item }) => {
   context.items = [];
 
   if (searchQuery.value) {
-    if (target) {
-      context.items.push(menuItems.openDir);
-      app.emitter.emit('vf-context-selected', [target]);
-      // console.log('search item selected');
-    } else {
+    if (!target) {
       return;
     }
-  } else if (!target && !searchQuery.value) {
+    context.items.push(menuItems.openDir);
+    app.emitter.emit('vf-context-selected', [target]);
+    // console.log('search item selected');
+
+  } else if (!target) {
     context.items.push(menuItems.refresh);
     context.items.push(menuItems.selectAll);
     context.items.push(menuItems.newfolder);
     app.emitter.emit('vf-context-selected', []);
     // console.log('no files selected');
-  } else if (items.length > 1 && items.some(el => el.path === target.path)) {
+  } else if (items.length > 1 && items.some((el: Item) => el.path === target.path)) {
     context.items.push(menuItems.refresh);
     context.items.push(menuItems.archive);
     context.items.push(menuItems.delete);
@@ -199,17 +211,17 @@ app.emitter.on('vf-contextmenu-show', ({ event, items, target = null }) => {
     app.emitter.emit('vf-context-selected', [target]);
     // console.log(target.type + ' is selected');
   }
-  showContextMenu(event)
+  showContextMenu(event);
 })
 
 app.emitter.on('vf-contextmenu-hide', () => {
   context.active = false;
 })
 
-const showContextMenu = (event) => {
-  const area = app.dragSelect.area.value
-  const rootContainer = app.root.getBoundingClientRect();
-  const areaContainer = area.getBoundingClientRect();
+const showContextMenu = (event: MouseEvent) => {
+
+  const rootContainer = app.root.value!.getBoundingClientRect();
+  const areaContainer = app.dragSelect.value.area.value!.getBoundingClientRect();
 
   let left = event.clientX - rootContainer.left;
   let top = event.clientY - rootContainer.top;
@@ -220,17 +232,14 @@ const showContextMenu = (event) => {
     // get the actual size of the context menu
     const menuContainer = contextmenu.value?.getBoundingClientRect();
 
-    let menuHeight = menuContainer?.height ?? 0;
-    let menuWidth = menuContainer?.width ?? 0;
+    const menuHeight = menuContainer?.height ?? 0;
+    const menuWidth = menuContainer?.width ?? 0;
 
     // check if the context menu is out of the container area
     left = (areaContainer.right - event.pageX + window.scrollX) < menuWidth ? left - menuWidth : left;
     top = (areaContainer.bottom - event.pageY + window.scrollY) < menuHeight ? top - menuHeight : top;
 
-    context.positions = {
-      left: left + 'px',
-      top: top + 'px'
-    };
+    context.positions = { left: `${left}px`, top: `${top}px` };
   });
 };
 

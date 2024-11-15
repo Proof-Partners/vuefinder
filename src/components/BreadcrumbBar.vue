@@ -24,7 +24,7 @@
       </div>
 
       <div class="list">
-        <div v-if="app.fs.hiddenBreadcrumbs.length" class="hidden-list" v-click-outside="handleClickOutside">
+        <div v-if="app.fs.hiddenBreadcrumbs.value.length" class="hidden-list" v-click-outside="handleClickOutside">
           <div class="separator">/</div>
           <div class="relative">
             <span @dragenter="app.fs.toggleHiddenBreadcrumbs(true)" @click="app.fs.toggleHiddenBreadcrumbs()"
@@ -36,11 +36,11 @@
       </div>
 
       <div ref="breadcrumbContainer" class="visible-list" @click.self="enterSearchMode">
-        <div v-for="(item, index) in app.fs.breadcrumbs" :key="index">
+        <div v-for="(item, index) in app.fs.breadcrumbs.value" :key="index">
           <span class="separator">/</span>
-          <span @dragover="(index === app.fs.breadcrumbs.length - 1) || handleDragOver($event)"
-            @dragleave="(index === app.fs.breadcrumbs.length - 1) || handleDragLeave($event)"
-            @drop="(index === app.fs.breadcrumbs.length - 1) || handleDropZone($event, index)" class="item"
+          <span @dragover="(index === app.fs.breadcrumbs.value.length - 1) || handleDragOver($event)"
+            @dragleave="(index === app.fs.breadcrumbs.value.length - 1) || handleDragLeave($event)"
+            @drop="(index === app.fs.breadcrumbs.value.length - 1) || handleDropZone($event, index)" class="item"
             :title="item.basename"
             @click="app.emitter.emit('vf-fetch', { params: { q: 'index', adapter: app.fs.adapter, path: item.path } })">{{
               item.name }}</span>
@@ -59,7 +59,7 @@
     </div>
 
     <div v-show="app.fs.showHiddenBreadcrumbs" class="hidden-dropdown">
-      <div v-for="(item, index) in app.fs.hiddenBreadcrumbs" :key="index" @dragover="handleDragOver($event)"
+      <div v-for="(item, index) in app.fs.hiddenBreadcrumbs.value" :key="index" @dragover="handleDragOver($event)"
         @dragleave="handleDragLeave($event)" @drop="handleHiddenBreadcrumbDropZone($event, index)"
         @click="handleHiddenBreadcrumbsClick(item)" class="hidden-item">
         <div class="hidden-item-content">
@@ -73,131 +73,121 @@
 </template>
 
 <script setup lang="ts">
-import { inject, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
-import useDebouncedRef from '../composables/useDebouncedRef.js';
-import { FEATURES } from "../features.js";
-import ModalMove from "./modals/ModalMove.vue";
-import RefreshSVG from "./icons/refresh.svg";
-import GoUpSVG from "./icons/go_up.svg";
-import CloseSVG from "./icons/close.svg";
-import HomeSVG from "./icons/home.svg";
-import SearchSVG from "./icons/search.svg";
-import LoadingSVG from "./icons/loading.svg";
-import ExitSVG from "./icons/exit.svg";
-import FolderSVG from './icons/folder.svg';
-import ListTreeSVG from './icons/list_tree.svg';
-import DotsSVG from './icons/dots.svg';
+import { inject, nextTick, onMounted, onUnmounted, ref, useTemplateRef, watch } from 'vue';
+import useDebouncedRef from '@/composables/useDebouncedRef';
+import type { Item } from '@/composables/useData';
+import { FEATURES } from "@/features.js";
+import ModalMove from "@/views/modals/ModalMove.vue";
+import RefreshSVG from "@/icons/refresh.svg";
+import GoUpSVG from "@/icons/go_up.svg";
+import CloseSVG from "@/icons/close.svg";
+import HomeSVG from "@/icons/home.svg";
+import SearchSVG from "@/icons/search.svg";
+import LoadingSVG from "@/icons/loading.svg";
+import ExitSVG from "@/icons/exit.svg";
+import FolderSVG from '@/icons/folder.svg';
+import ListTreeSVG from '@/icons/list_tree.svg';
+import DotsSVG from '@/icons/dots.svg';
+import type { ServiceContainer } from '@/ServiceContainer.js';
 
-const app = inject('ServiceContainer');
+const app = inject<ServiceContainer>('ServiceContainer')!;
 const { t } = app.i18n;
 const ds = app.dragSelect;
 const { setStore } = app.storage;
 
 // dynamic shown items calculation for breadcrumbs
-const breadcrumbContainer = ref(null);
+
+const breadcrumbContainer = useTemplateRef('breadcrumbContainer');
 const breadcrumbContainerWidth = useDebouncedRef(0, 100);
-watch(breadcrumbContainerWidth, newQuery => {
-  const children = breadcrumbContainer.value.children;
+
+watch(breadcrumbContainerWidth, (width) => {
+  const { children } = breadcrumbContainer.value!;
+
   let totalWidth = 0;
   let count = 0;
-  let max_shown_items = 5;
-  let min_shown_items = 1;
+  const max = 5;
+  const min = 1;
 
-  app.fs.limitBreadcrumbItems(max_shown_items);
+  app.fs.limitBreadcrumbItems(max);
   nextTick(() => {
     for (let i = children.length - 1; i >= 0; i--) {
-      if (totalWidth + children[i].offsetWidth > breadcrumbContainerWidth.value - 40) {
+      const child = children[i] as HTMLElement;
+      if (totalWidth + child.offsetWidth > width - 40) {
         break;
       }
-      totalWidth += parseInt(children[i].offsetWidth, 10);
+      totalWidth += child.offsetWidth;
       count++;
     }
 
-    if (count < min_shown_items) count = min_shown_items;
-    if (count > max_shown_items) count = max_shown_items;
+    count = Math.min(Math.max(count, min), max)
 
     app.fs.limitBreadcrumbItems(count);
   });
 });
 
 const updateContainerWidth = () => {
-  breadcrumbContainerWidth.value = breadcrumbContainer.value.offsetWidth;
+  breadcrumbContainerWidth.value = breadcrumbContainer.value!.offsetWidth;
 }
-let resizeObserver = ref(null);
 
+const resizeObserver = ref<ResizeObserver | null>(null);
 onMounted(() => {
   resizeObserver.value = new ResizeObserver(updateContainerWidth);
-  resizeObserver.value.observe(breadcrumbContainer.value);
+  resizeObserver.value.observe(breadcrumbContainer.value!);
 });
 onUnmounted(() => {
-  resizeObserver.value.disconnect();
+  resizeObserver.value?.disconnect();
 });
 
-const handleHiddenBreadcrumbDropZone = (e, index = null) => {
-  e.preventDefault();
+const handleDropZoneFor = (src: Item[], offset: number) => {
+  return (e: DragEvent, index?: number) => {
+    e.preventDefault();
 
-  ds.isDraggingRef.value = false;
-  handleDragLeave(e);
+    ds.value.isDraggingRef.value = false;
+    handleDragLeave(e);
 
-  index ??= app.fs.hiddenBreadcrumbs.length - 1;
+    // TODO find out what is the type of the data
+    const draggedItems: { storage: string }[] = JSON.parse(e.dataTransfer?.getData('items') ?? '');
 
-  let draggedItems = JSON.parse(e.dataTransfer.getData('items'));
-
-  if (draggedItems.find(item => item.storage !== app.fs.adapter)) {
-    alert('Moving items between different storages is not supported yet.');
-    return;
-  }
-
-  app.modal.open(ModalMove, {
-    items: {
-      from: draggedItems,
-      to: app.fs.hiddenBreadcrumbs[index] ?? { path: (app.fs.adapter + '://') }
+    if (draggedItems.find((item) => item.storage !== app.fs.adapter.value)) {
+      alert('Moving items between different storages is not supported yet.');
+      return;
     }
-  })
-};
 
-const handleDropZone = (e, index = null) => {
-  e.preventDefault();
-
-  ds.isDraggingRef.value = false;
-  handleDragLeave(e);
-
-  index ??= app.fs.breadcrumbs.length - 2;
-
-  let draggedItems = JSON.parse(e.dataTransfer.getData('items'));
-
-  if (draggedItems.find(item => item.storage !== app.fs.adapter)) {
-    alert('Moving items between different storages is not supported yet.');
-    return;
+    index ??= src.length - offset;
+    app.modal.open(ModalMove, {
+      items: {
+        from: draggedItems,
+        to: src[index] ?? {
+          path: (app.fs.adapter + '://')
+        },
+      },
+    });
   }
+}
 
-  app.modal.open(ModalMove, {
-    items: {
-      from: draggedItems,
-      to: app.fs.breadcrumbs[index] ?? { path: (app.fs.adapter + '://') }
-    }
-  })
-};
+const handleHiddenBreadcrumbDropZone = handleDropZoneFor(app.fs.hiddenBreadcrumbs.value, 1);
 
-const handleDragOver = (e) => {
+const handleDropZone = handleDropZoneFor(app.fs.breadcrumbs.value, 2);
+
+const handleDragOver = (e: DragEvent) => {
   e.preventDefault();
 
   if (app.fs.isGoUpAvailable()) {
-    e.dataTransfer.dropEffect = 'copy';
-    e.currentTarget.classList.add('bg-blue-200', 'dark:bg-slate-600');
+    e.dataTransfer!.dropEffect = 'copy';
+    (e.currentTarget as HTMLElement).classList.add('bg-blue-200', 'dark:bg-slate-600');
   } else {
-    e.dataTransfer.dropEffect = 'none';
-    e.dataTransfer.effectAllowed = 'none';
+    e.dataTransfer!.dropEffect = 'none';
+    e.dataTransfer!.effectAllowed = 'none';
   }
 };
 
-const handleDragLeave = (e) => {
+const handleDragLeave = (e: DragEvent) => {
   e.preventDefault();
 
-  e.currentTarget.classList.remove('bg-blue-200', 'dark:bg-slate-600');
+  // (e.currentTarget as HTMLElement).classList.remove('bg-blue-200', 'dark:bg-slate-600');
 
   if (app.fs.isGoUpAvailable()) {
-    e.currentTarget.classList.remove('bg-blue-200', 'dark:bg-slate-600');
+    (e.currentTarget as HTMLElement).classList.remove('bg-blue-200', 'dark:bg-slate-600');
   }
 };
 
@@ -205,46 +195,49 @@ const handleRefresh = () => {
   exitSearchMode();
 
   app.emitter.emit('vf-fetch', { params: { q: 'index', adapter: app.fs.adapter, path: app.fs.data.dirname } });
-}
+};
 
 const handleGoUp = () => {
   exitSearchMode();
 
-  !app.fs.isGoUpAvailable() || app.emitter.emit('vf-fetch', {
-    params: {
-      q: 'index',
-      adapter: app.fs.adapter,
-      path: app.fs.parentFolderPath
-    }
-  })
-}
+  if (app.fs.isGoUpAvailable()) {
+    app.emitter.emit('vf-fetch', {
+      params: {
+        q: 'index',
+        adapter: app.fs.adapter,
+        path: app.fs.parentFolderPath
+      }
+    })
+  }
+};
 
-const handleHiddenBreadcrumbsClick = (item) => {
+const handleHiddenBreadcrumbsClick = (item: Item) => {
   app.emitter.emit('vf-fetch', { params: { q: 'index', adapter: app.fs.adapter, path: item.path } });
   app.fs.toggleHiddenBreadcrumbs(false);
 }
 
 const handleClickOutside = () => {
-  if (app.fs.showHiddenBreadcrumbs) {
-    app.fs.toggleHiddenBreadcrumbs(false);
-  }
+  app.fs.toggleHiddenBreadcrumbs(false);
 }
 
-const vClickOutside = {
-  mounted(el, binding, vnode, prevVnode) {
-    el.clickOutsideEvent = function (event) {
-      // here I check that click was outside the el and his children
-      if (!(el === event.target || el.contains(event.target))) {
-        // and if it did, call method provided in attribute value
-        binding.value();
-      }
-    };
-    document.body.addEventListener('click', el.clickOutsideEvent)
-  },
-  beforeUnmount(el, binding, vnode, prevVnode) {
-    document.body.removeEventListener('click', el.clickOutsideEvent)
-  }
-};
+// TODO removed, because it doesn't seem to do anything?
+// const vClickOutside = {
+//   mounted(el, binding, vnode, prevVnode) {
+//     el.clickOutsideEvent = (event: Event) => {
+//       // here I check that click was outside the el and his children
+//       if (!(el === event.target || el.contains(event.target))) {
+//         // and if it did, call method provided in attribute value
+//         binding.value();
+//       }
+//     };
+//     document.body.addEventListener('click', el.clickOutsideEvent)
+//   },
+//   beforeUnmount(el, binding, vnode, prevVnode) {
+//     document.body.removeEventListener('click', el.clickOutsideEvent)
+//   }
+// };
+
+// FIXME seems like this is in the wrong place
 /**
  * Tree View
  */
@@ -257,19 +250,18 @@ watch(() => app.showTreeView, (newShowTreeView, oldValue) => {
   }
 });
 
+// FIXME seems like this is in the wrong place
 /**
  *
  * Search
  */
-
-const searchInput = ref(null);
+const searchInput = useTemplateRef('searchInput');
 
 const enterSearchMode = () => {
   if (!app.features.includes(FEATURES.SEARCH)) {
     return;
   }
   app.fs.searchMode = true;
-  nextTick(() => searchInput.value.focus());
 }
 
 const query = useDebouncedRef('', 400);
@@ -281,7 +273,7 @@ watch(query, newQuery => {
 
 watch(() => app.fs.searchMode, (newSearchMode) => {
   if (newSearchMode) {
-    nextTick(() => searchInput.value.focus());
+    nextTick(() => searchInput.value!.focus());
   }
 });
 

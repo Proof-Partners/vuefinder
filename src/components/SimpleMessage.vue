@@ -13,17 +13,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, inject } from 'vue';
+import type { ServiceContainer } from '@/ServiceContainer';
+import { ref, watch, inject, useTemplateRef } from 'vue';
 
 const emit = defineEmits(['hidden']);
 const { error = false } = defineProps<{ error: boolean }>();
 
-const app = inject('ServiceContainer');
+const app = inject<ServiceContainer>('ServiceContainer')!;
 const { t } = app.i18n;
 
 const hidden = ref(false);
-const strMessage = ref<unknown>(null);
-const strSlot = ref(strMessage.value?.strMessage);
+const strMessage = useTemplateRef('strMessage')
+const strSlot = defineSlots().default;
 
 watch(strSlot, () => hidden.value = false);
 

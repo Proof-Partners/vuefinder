@@ -6,8 +6,8 @@
 </template>
 
 <script setup lang="ts">
-import DragSVG from './icons/drag.svg';
-let { count = 0 } = defineProps<{ count: number }>();
+import DragSVG from '@/icons/drag.svg';
+const { count = 0 } = defineProps<{ count: number }>();
 
 </script>
 

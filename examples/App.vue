@@ -25,9 +25,9 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue';
-import { FEATURES, FEATURE_ALL_NAMES } from '../src/features.js';
+import { FEATURE_ALL_NAMES } from '@/features.js';
 
 /** @type {import('../src/utils/ajax.js').RequestConfig} */
 

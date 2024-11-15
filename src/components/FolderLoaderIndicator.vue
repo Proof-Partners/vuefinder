@@ -3,7 +3,7 @@
 
     <LoadingSVG v-if="loading" class="loading" />
     <div class="icon" v-else>
-      <SquareMinusSVG class="minus" v-if="opened && getLoadedFolder()?.folders.length" />
+      <SquareMinusSVG class="minus" v-if="opened && getLoadedFolder()?.folders?.length" />
       <SquarePlusSVG class="plus" v-if="!opened" />
     </div>
 
@@ -17,30 +17,22 @@ import SquarePlusSVG from "./icons/plus.svg";
 import SquareMinusSVG from "./icons/minus.svg";
 import LoadingSVG from "./icons/loading.svg";
 import upsert from "../utils/upsert";
+import type { ServiceContainer } from '@/ServiceContainer';
 
 // TODO move state elsewhere?
 // TODO reuse FolderIndicator.vue?
 
-const props = defineProps({
-  adapter: {
-    type: String,
-    required: true,
-  },
-  path: {
-    type: String,
-    required: true,
-  }
-});
+const { adapter, path } = defineProps<{ adapter: string, path: string }>();
 
-const app = inject('ServiceContainer');
+const app = inject<ServiceContainer>('ServiceContainer')!;
 // const {t} = app.i18n;
-const opened = defineModel<bool>('opened');
+const opened = defineModel<boolean>('opened');
 const loading = ref(false)
 
 // loading..
 
 watch(() => opened.value, () =>
-  getLoadedFolder()?.folders.length || fetchSubFolders()
+  getLoadedFolder()?.folders?.length || fetchSubFolders()
 );
 
 // function toggleIndicator() {
@@ -48,7 +40,7 @@ watch(() => opened.value, () =>
 // }
 
 function getLoadedFolder() {
-  return app.treeViewData.find(e => e.path === props.path);
+  return app.treeViewData.find(e => e.path === path);
 }
 
 const fetchSubFolders = () => {
@@ -58,14 +50,14 @@ const fetchSubFolders = () => {
     method: 'get',
     params: {
       q: 'subfolders',
-      adapter: props.adapter,
-      path: props.path,
+      adapter,
+      path,
     },
   })
-    .then(data => {
-      upsert(app.treeViewData, { path: props.path, ...data })
-    })
-    .catch((e) => {
+    .then((res) => res.json())
+    .then((data) => {
+      upsert(app.treeViewData, { path, ...data })
+      // }).catch(() => {
     })
     .finally(() => {
       loading.value = false;

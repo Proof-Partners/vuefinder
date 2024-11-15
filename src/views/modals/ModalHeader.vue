@@ -7,17 +7,10 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
+import type { VNode } from 'vue';
 
-defineProps({
-  title: {
-    type: String,
-    required: true,
-  },
-  icon: {
-    type: Object,
-    required: true,
-  },
-})
+
+defineProps<{ title: string, icon: VNode | string }>();
 
 </script>

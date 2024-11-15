@@ -13,13 +13,13 @@
           <FolderIndicator v-model="pinnedFoldersOpened" />
         </div>
         <ul class="pinned-list" v-if="pinnedFoldersOpened">
-          <li v-for="favorite in app.pinnedFolders" class="pinned-item">
+          <li v-for="favorite in app.pinnedFolders" class="pinned-item" :key="favorite.path">
             <div class="pinned-folder"
               @click="app.emitter.emit('vf-fetch', { params: { q: 'index', adapter: favorite.storage, path: favorite.path } })">
-              <FolderSVG class="folder-icon" v-if="app.fs.path !== favorite.path" />
-              <OpenFolderSVG class="open-folder-icon" v-if="app.fs.path === favorite.path" />
+              <FolderSVG class="folder-icon" v-if="app.fs.path.value !== favorite.path" />
+              <OpenFolderSVG class="open-folder-icon" v-if="app.fs.path.value === favorite.path" />
               <div :title="favorite.path"
-                :class="['folder-name', 'text-nowrap', { active: app.fs.path === favorite.path }]">
+                :class="['folder-name', 'text-nowrap', { active: app.fs.path.value === favorite.path }]">
                 {{ favorite.basename }}
               </div>
             </div>
@@ -33,7 +33,7 @@
         </ul>
       </div>
 
-      <div class="storage" v-for="storage in app.fs.data.storages">
+      <div class="storage" v-for="storage in app.fs.data.storages" :key="storage">
         <TreeStorageItem :storage="storage" />
       </div>
     </div>
@@ -43,7 +43,7 @@
 </template>
 
 <script setup lang="ts">
-import { inject, onMounted, ref, watch } from 'vue';
+import { inject, onMounted, ref, useTemplateRef, watch } from 'vue';
 import FolderSVG from './icons/folder.svg';
 import OpenFolderSVG from './icons/open_folder.svg';
 import PinSVG from "./icons/pin.svg";
@@ -53,30 +53,32 @@ import { OverlayScrollbars } from 'overlayscrollbars';
 import TreeStorageItem from "./TreeStorageItem.vue";
 import upsert from "../utils/upsert";
 import FolderIndicator from "./FolderIndicator.vue";
+import type { ServiceContainer } from '@/ServiceContainer';
+import type { Item } from '@/composables/useData';
 
-const app = inject('ServiceContainer');
+const app = inject<ServiceContainer>('ServiceContainer')!;
 const { t } = app.i18n;
 const { getStore, setStore } = app.storage;
 
 const treeViewWidth = ref(190);
-const pinnedFoldersOpened = ref(getStore('pinned-folders-opened', true));
+const pinnedFoldersOpened = ref(getStore('pinned-folders-opened', true)!);
 watch(pinnedFoldersOpened, (value) => setStore('pinned-folders-opened', value));
 
-const removeFavorite = (item) => {
+const removeFavorite = (item: Item) => {
   app.pinnedFolders = app.pinnedFolders.filter(fav => fav.path !== item.path);
   app.storage.setStore('pinned-folders', app.pinnedFolders);
 }
 
-const handleMouseDown = (e) => {
+const handleMouseDown = (e: MouseEvent) => {
   const startX = e.clientX;
-  const element = e.target.parentElement;
+  const element = (e.target as HTMLElement).parentElement!;
   const startWidth = element.getBoundingClientRect().width;
 
   // start of event remove transition-[width] and add transition-none
   element.classList.remove('transition-[width]');
   element.classList.add('transition-none');
 
-  const handleMouseMove = (e) => {
+  const handleMouseMove = (e: MouseEvent) => {
     treeViewWidth.value = startWidth + e.clientX - startX;
 
     if (treeViewWidth.value < 50) {
@@ -105,10 +107,10 @@ const handleMouseDown = (e) => {
   window.addEventListener('mouseup', handleMouseUp);
 
 }
-const treeViewScrollElement = ref(null);
+const treeViewScrollElement = useTemplateRef('treeViewScrollElement');
 
 onMounted(() => {
-  OverlayScrollbars(treeViewScrollElement.value, {
+  OverlayScrollbars(treeViewScrollElement.value!, {
     overflow: {
       x: 'hidden',
     },
@@ -120,18 +122,17 @@ onMounted(() => {
 
 // watch for changes in the fs.data
 // update the treeViewData
-watch(app.fs.data, (newValue, oldValue) => {
+watch(app.fs.data, (newValue) => {
   const folders = newValue.files.filter(e => e.type === 'dir');
 
   upsert(app.treeViewData, {
-    path: app.fs.path, folders: folders.map((item) => {
-      return {
-        adapter: item.storage,
-        path: item.path,
-        basename: item.basename
-      }
-    })
-  })
+    path: app.fs.path.value,
+    folders: folders.map((item) => ({
+      adapter: item.storage,
+      path: item.path,
+      basename: item.basename
+    })),
+  });
 });
 
 </script>

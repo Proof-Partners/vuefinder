@@ -1,8 +1,8 @@
-import {onMounted, onUnmounted} from 'vue';
-import {FEATURES} from "../features.js";
-import ModalAbout from "../components/modals/ModalAbout.vue";
-import ModalDelete from "../components/modals/ModalDelete.vue";
-import ModalRename from "../components/modals/ModalRename.vue";
+import { onMounted } from 'vue';
+import { FEATURES } from "@/features";
+import ModalAbout from "@/views/modals/ModalAbout.vue";
+import ModalDelete from "@/views/modals/ModalDelete.vue";
+import ModalRename from "@/views/modals/ModalRename.vue";
 
 const KEYBOARD_SHORTCUTS = {
     ESCAPE: 'Escape',
@@ -33,15 +33,16 @@ export function useHotkeyActions(app) {
         }
 
         if (e.code === KEYBOARD_SHORTCUTS.F2 && app.features.includes(FEATURES.RENAME)) {
-            (app.dragSelect.getCount() !== 1) || app.modal.open(ModalRename, {items: app.dragSelect.getSelected()})
+            (app.dragSelect.getCount() !== 1) || app.modal.open(ModalRename, { items: app.dragSelect.getSelected() })
         }
 
         if (e.code === KEYBOARD_SHORTCUTS.F5) {
-            app.emitter.emit('vf-fetch', {params: {q: 'index', adapter: app.fs.adapter, path: app.fs.data.dirname}});
+            // TODO revisit this
+            // app.emitter.emit('vf-fetch', { params: { q: 'index', adapter: app.fs.adapter, path: app.fs.data.dirname } });
         }
 
         if (e.code === KEYBOARD_SHORTCUTS.DELETE) {
-            (!app.dragSelect.getCount()) || app.modal.open(ModalDelete, {items: app.dragSelect.getSelected()})
+            (!app.dragSelect.getCount()) || app.modal.open(ModalDelete, { items: app.dragSelect.getSelected() })
         }
 
         if (e.metaKey && e.code === KEYBOARD_SHORTCUTS.BACKSLASH) {

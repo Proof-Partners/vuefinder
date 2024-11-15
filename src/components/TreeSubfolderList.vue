@@ -1,6 +1,6 @@
 <template>
   <ul ref="parentSubfolderList" class="container">
-    <li v-for="(item, index) in treeSubFolders" :key="item.path" class="item">
+    <li v-for="(item) in treeSubFolders" :key="item.path" class="item">
       <div class="item-content">
         <div class="item-toggle" @click="showSubFolders[item.path] = !showSubFolders[item.path]">
           <FolderLoaderIndicator :adapter="adapter" :path="item.path" v-model="showSubFolders[item.path]" />
@@ -8,10 +8,10 @@
         <div class="item-link" :title="item.path"
           @click="app.emitter.emit('vf-fetch', { params: { q: 'index', adapter: props.adapter, path: item.path } })">
           <div class="item-icon">
-            <OpenFolderSVG v-if="app.fs.path === item.path" />
+            <OpenFolderSVG v-if="app.fs.path.value === item.path" />
             <FolderSVG v-else />
           </div>
-          <div :class="['item-text', { active: app.fs.path === item.path }]">
+          <div :class="['item-text', { active: app.fs.path.value === item.path }]">
             {{ item.basename }}
           </div>
         </div>
@@ -24,24 +24,25 @@
 </template>
 
 <script setup lang="ts">
-import { computed, inject, onMounted, ref } from 'vue';
+import { computed, inject, onMounted, ref, useTemplateRef } from 'vue';
 
 import FolderSVG from "./icons/folder.svg";
 import OpenFolderSVG from "./icons/open_folder.svg";
 import FolderLoaderIndicator from "./FolderLoaderIndicator.vue";
 import { OverlayScrollbars } from "overlayscrollbars";
+import type { ServiceContainer } from '@/ServiceContainer';
 
-const app = inject('ServiceContainer');
+const app = inject<ServiceContainer>('ServiceContainer')!;
 
-const showSubFolders = ref([]);
+const showSubFolders = ref<Record<string, boolean>>({});
 
 const props = defineProps<{ adapter: string, path: string }>();
-const parentSubfolderList = ref(null)
+const parentSubfolderList = useTemplateRef('parentSubfolderList');
 
 onMounted(() => {
   // only initialize overlay scrollbars for the root folder
   if (props.path === `${props.adapter}://`) {
-    OverlayScrollbars(parentSubfolderList.value, {
+    OverlayScrollbars(parentSubfolderList.value!, {
       scrollbars: {
         theme: 'vf-theme-dark dark:vf-theme-light',
       },

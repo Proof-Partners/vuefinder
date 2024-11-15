@@ -19,10 +19,6 @@
       </div>
     </div>
 
-    <div class="drag-item">
-      <DragItem ref="dragImage" :count="ds.getCount()" />
-    </div>
-
     <div :ref="ds.scrollBarContainer"
       :class="['vf-explorer-scrollbar-container', 'scrollbar-container', { 'grid-view': app.view === 'grid', 'search-active': searchQuery.length > 0 }]">
       <div :ref="ds.scrollBar" class="scrollbar"></div>
@@ -34,48 +30,55 @@
       <div class="vuefinder__linear-loader absolute" v-if="app.loadingIndicator === 'linear' && app.fs.loading"></div>
 
       <!-- Search View -->
-      <Item v-if="searchQuery.length" v-for="(item, index) in getItems()" :item="item" :index="index"
-        :dragImage="dragImage" class="vf-item vf-item-list">
-        <div class="item-list-content">
-          <div class="item-list-name">
-            <ItemIcon :type="item.type" :small="app.compactListView" />
-            <span class="item-name">{{ item.basename }}</span>
+      <template v-if="searchQuery.length">
+        <FileItem v-for="(item, index) in getItems()" :item="item" :index="index" :key="item.path"
+          :drag-count="ds.getCount()" class="vf-item vf-item-list">
+          <div class="item-list-content">
+            <div class="item-list-name">
+              <ItemIcon :type="item.type!" :small="app.compactListView" />
+              <span class="item-name">{{ item.basename }}</span>
+            </div>
+            <div class="item-path">{{ item.path }}</div>
           </div>
-          <div class="item-path">{{ item.path }}</div>
-        </div>
-      </Item>
+        </FileItem>
+      </template>
       <!-- List View -->
-      <Item v-if="app.view === 'list' && !searchQuery.length" v-for="(item, index) in getItems()" :item="item"
-        :index="index" :dragImage="dragImage" class="vf-item vf-item-list" draggable="true" :key="item.path">
-        <div class="item-list-content">
-          <div class="item-list-name">
-            <ItemIcon :type="item.type" :small="app.compactListView" />
-            <span class="item-name">{{ item.basename }}</span>
-          </div>
-          <div class="item-size">{{ item.file_size ? app.filesize(item.file_size) : '' }}</div>
-          <div class="item-date">
-            {{ datetimestring(item.last_modified) }}
-          </div>
-        </div>
-      </Item>
-      <!-- Grid View -->
-      <Item v-if="app.view === 'grid' && !searchQuery.length" v-for="(item, index) in getItems(false)" :item="item"
-        :index="index" :dragImage="dragImage" class="vf-item vf-item-grid" draggable="true">
-        <div>
-          <div class="item-grid-content">
-            <img src="data:image/png;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="
-              class="item-thumbnail lazy" v-if="(item.mime_type ?? '').startsWith('image') && app.showThumbnails"
-              :data-src="app.requester.getPreviewUrl(app.fs.adapter, item)" :alt="item.basename" :key="item.path">
-            <ItemIcon :type="item.type" v-else />
-            <div class="item-extension"
-              v-if="!((item.mime_type ?? '').startsWith('image') && app.showThumbnails) && item.type !== 'dir'">
-              {{ ext(item.extension) }}
+      <template v-if="app.view === 'list' && !searchQuery.length">
+        <FileItem v-for="(item, index) in getItems()" :item="item" :index="index" :drag-count="ds.getCount()"
+          class="vf-item vf-item-list" draggable="true" :key="item.path">
+          <div class="item-list-content">
+            <div class="item-list-name">
+              <ItemIcon :type="item.type!" :small="app.compactListView" />
+              <span class="item-name">{{ item.basename }}</span>
+            </div>
+            <div class="item-size">{{ item.file_size ? app.filesize(item.file_size) : '' }}</div>
+            <div class="item-date">
+              {{ datetimestring(item.last_modified!) }}
             </div>
           </div>
+        </FileItem>
+      </template>
+      <!-- Grid View -->
+      <template v-if="app.view === 'grid' && !searchQuery.length">
+        <FileItem v-for="(item, index) in getItems(false)" :item="item" :index="index" :drag-count="ds.getCount()"
+          class="vf-item vf-item-grid" draggable="true" :key="item.path">
+          <div>
+            <div class="item-grid-content">
+              <img v-if="(item.mime_type ?? '').startsWith('image') && app.showThumbnails"
+                src="data:image/png;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="
+                class="item-thumbnail lazy" :data-src="app.requester.getPreviewUrl(app.fs.adapter.value, item)"
+                :alt="item.basename" :key="item.path">
+              <ItemIcon v-else :type="item.type!" />
+              <div class="item-extension"
+                v-if="!((item.mime_type ?? '').startsWith('image') && app.showThumbnails) && item.type !== 'dir'">
+                {{ ext(item.name!) }}
+              </div>
+            </div>
 
-          <span class="item-title break-all">{{ title_shorten(item.basename) }}</span>
-        </div>
-      </Item>
+            <span class="item-title break-all">{{ title_shorten(item.basename!) }}</span>
+          </div>
+        </FileItem>
+      </template>
     </div>
 
     <Toast />
@@ -86,28 +89,30 @@
 import { inject, onBeforeUnmount, onMounted, onUpdated, reactive, ref } from 'vue';
 import datetimestring from '../utils/datetimestring.js';
 import title_shorten from "../utils/title_shorten.js";
-import Toast from './Toast.vue';
-import LazyLoad from 'vanilla-lazyload';
+import Toast from './ToastMessage.vue';
+import LazyLoad, { type ILazyLoadInstance } from 'vanilla-lazyload';
 import SortIcon from "./SortIcon.vue";
 import ItemIcon from "./ItemIcon.vue";
-import DragItem from "./DragItem.vue";
-import Item from "./Item.vue";
+import FileItem from "./FileItem.vue";
+
+import { type Item } from '@/composables/useData';
+import type { ServiceContainer } from '@/ServiceContainer.js';
 
 
-const app = inject('ServiceContainer');
+const app = inject<ServiceContainer>('ServiceContainer')!;
 const { t } = app.i18n;
 
-const ext = (item) => item?.substring(0, 3)
-const dragImage = ref(null);
+const ext = (item: string) => item?.substring(0, 3)
 
 const searchQuery = ref('');
 const ds = app.dragSelect;
 
-/** @type {import('vanilla-lazyload').ILazyLoadInstance} */
-let vfLazyLoad
+let vfLazyLoad: ILazyLoadInstance;
 
 app.emitter.on('vf-fullscreen-toggle', () => {
-  ds.area.value.style.height = null;
+  if (ds.value.area.value) {
+    ds.value.area.value.style.height = '';
+  }
 });
 
 app.emitter.on('vf-search-query', ({ newQuery }) => {
@@ -117,39 +122,43 @@ app.emitter.on('vf-search-query', ({ newQuery }) => {
     app.emitter.emit('vf-fetch', {
       params: {
         q: 'search',
-        adapter: app.fs.adapter,
+        adapter: app.fs.adapter.value,
         path: app.fs.data.dirname,
         filter: newQuery
       },
       onSuccess: (data) => {
-        if (!data.files.length) {
+        if (!(data.files as unknown[]).length) {
           app.emitter.emit('vf-toast-push', { label: t('No search result found.') });
         }
       }
     });
   } else {
-    app.emitter.emit('vf-fetch', { params: { q: 'index', adapter: app.fs.adapter, path: app.fs.data.dirname } });
+    app.emitter.emit('vf-fetch', {
+      params: {
+        q: 'index',
+        adapter: app.fs.adapter.value,
+        path: app.fs.data.dirname
+      }
+    });
   }
 });
 
-const sort = reactive({ active: false, column: '', order: '' });
+const sort = reactive<{ active: boolean, column: keyof Item, order: 'asc' | 'desc' }>({ active: false, column: 'name', order: 'desc' });
 
 const getItems = (sorted = true) => {
-  let files = [...app.fs.data.files],
-    column = sort.column,
-    order = sort.order === 'asc' ? 1 : -1;
+  let files = [...app.fs.data.files];
+  const column = sort.column;
+  const order = sort.order === 'asc' ? 1 : -1;
 
   if (!sorted) {
     return files;
   }
 
-  const compare = (a, b) => {
+  const compare = <T = typeof column>(a: T, b: T) => {
     if (typeof a === 'string' && typeof b === 'string') {
       return a.toLowerCase().localeCompare(b.toLowerCase());
     }
-    if (a < b) return -1;
-    if (a > b) return 1;
-    return 0;
+    return a > b ? 1 : -1;
   };
 
   if (sort.active) {
@@ -159,21 +168,20 @@ const getItems = (sorted = true) => {
   return files;
 };
 
-const sortBy = (column) => {
+const sortBy = (column: keyof Item) => {
   if (sort.active && sort.column === column) {
-    sort.active = sort.order === 'asc'
-    sort.column = column
-    sort.order = 'desc'
+    sort.active = sort.order === 'asc';
+    sort.order = 'desc';
   } else {
-    sort.active = true
-    sort.column = column
-    sort.order = 'asc'
+    sort.active = true;
+    sort.column = column;
+    sort.order = 'asc';
   }
 };
 
 
 onMounted(() => {
-  vfLazyLoad = new LazyLoad(ds.area.value);
+  vfLazyLoad = new LazyLoad({ container: ds.value.area.value! });
 });
 
 onUpdated(() => {
@@ -213,10 +221,6 @@ onBeforeUnmount(() => {
   &.path {
     @apply justify-center col-span-5;
   }
-}
-
-.drag-item {
-  @apply relative;
 }
 
 .scrollbar-container {

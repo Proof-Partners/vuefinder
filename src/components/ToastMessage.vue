@@ -1,9 +1,9 @@
 <template>
-  <div :class="['toast', fullScreen.value ? 'is-fixed' : 'is-absolute']">
+  <div :class="['toast', fullScreen ? 'is-fixed' : 'is-absolute']">
     <transition-group name="vuefinder__toast-item" enter-active-class="toast-item--enter-active"
       leave-active-class="toast-item--leave-active" leave-to-class="toast-item--leave-to">
       <div v-for="(message, index) in messageQueue" :key="index" @click="removeItem(index)"
-        :class="['message', getTypeClass(message.type)]">
+        :class="['message', { error: message.type === 'error' }]">
         {{ message.label }}
       </div>
     </transition-group>
@@ -12,38 +12,32 @@
 
 <script setup lang="ts">
 import { inject, ref } from 'vue';
+import type { ServiceContainer } from '@/ServiceContainer';
+import { type Events } from '@/composables/useEmit';
 
-const app = inject('ServiceContainer');
+const app = inject<ServiceContainer>('ServiceContainer')!;
 const { getStore } = app.storage;
 
 const fullScreen = ref(getStore('full-screen', false));
-const messageQueue = ref([]);
+const messageQueue = ref<(Events['vf-toast-push'])[]>([]);
 
-// TODO move to css
-const getTypeClass = (type) => {
-  if (type === 'error') {
-    return 'text-red-400 border-red-400 dark:text-red-300 dark:border-red-300';
-  }
-  return 'text-lime-600 border-lime-600 dark:text-lime-300 dark:border-lime-1300';
-};
-
-const removeItem = (index) => {
+const removeItem = (index: number) => {
   messageQueue.value.splice(index, 1);
 };
 
-const removeItemByID = (uid) => {
-  let index = messageQueue.value.findIndex(x => x.id === uid);
+const removeItemByID = (uid: string) => {
+  const index = messageQueue.value.findIndex(x => x.id === uid);
   if (index !== -1) {
     removeItem(index);
   }
 };
 
 app.emitter.on('vf-toast-clear', () => {
-  messageQueue.value = []
+  messageQueue.value = [];
 });
 
 app.emitter.on('vf-toast-push', (data) => {
-  let uid = new Date().getTime().toString(36).concat(performance.now().toString(), Math.random().toString()).replace(/\./g, "");
+  const uid = new Date().getTime().toString(36).concat(performance.now().toString(), Math.random().toString()).replace(/\./g, "");
   data.id = uid;
   messageQueue.value.push(data);
 
@@ -69,6 +63,12 @@ app.emitter.on('vf-toast-push', (data) => {
 
 .message {
   @apply inline-block mx-auto my-0.5 py-0.5 px-2 min-w-max bg-gray-50 dark:bg-gray-600 border text-xs sm:text-sm rounded cursor-pointer;
+
+  @apply text-lime-600 border-lime-600 dark:text-lime-300 dark:border-lime-1300;
+
+  &.error {
+    @apply text-red-400 border-red-400 dark:text-red-300 dark:border-red-300;
+  }
 }
 
 /* Transition classes */

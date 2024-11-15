@@ -1,7 +1,7 @@
 <template>
   <div @click="selectOrToggle(storage)" class="header">
-    <div :class="['info', { active: storage === app.fs.adapter }]">
-      <div :class="['icon', { active: storage === app.fs.adapter }]">
+    <div :class="['info', { active: storage === app.fs.adapter.value }]">
+      <div :class="['icon', { active: storage === app.fs.adapter.value }]">
         <StorageSVG />
       </div>
       <div>{{ storage }}</div>
@@ -20,9 +20,10 @@ import { inject, ref } from 'vue';
 import StorageSVG from "./icons/storage.svg";
 import FolderLoaderIndicator from "./FolderLoaderIndicator.vue";
 import TreeSubfolderList from "./TreeSubfolderList.vue";
+import type { ServiceContainer } from '@/ServiceContainer';
 
 // TODO remove state?
-const app = inject('ServiceContainer');
+const app = inject<ServiceContainer>('ServiceContainer')!;
 const { setStore } = app.storage;
 const showSubFolders = ref(false);
 
@@ -32,8 +33,8 @@ defineProps<{ storage: string }>();
  * If the storage is active the visibilty of the subfolders gets toggled, otherwise the storage will become active 
  * @param storage {string}
  */
-function selectOrToggle(storage) {
-  if (storage === app.fs.adapter) {
+function selectOrToggle(storage: string) {
+  if (storage === app.fs.adapter.value) {
     // toggle list of subfolders
     showSubFolders.value = !showSubFolders.value
   } else {

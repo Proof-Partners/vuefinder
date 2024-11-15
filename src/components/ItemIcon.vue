@@ -6,10 +6,10 @@
 </template>
 
 <script setup lang="ts">
-import FileSVG from './icons/file.svg';
-import FolderSVG from './icons/folder.svg';
+import FileSVG from '@/icons/file.svg';
+import FolderSVG from '@/icons/folder.svg';
 
-const { small = false } = defineProps<{ type: string, small: bool }>();
+const { small = false } = defineProps<{ type: string, small?: boolean }>();
 
 </script>
 

@@ -5,9 +5,9 @@
       <div class="vuefinder__new-file-modal__content">
         <div class="vuefinder__new-file-modal__form">
           <p class="vuefinder__new-file-modal__description">{{ t('Create a new file') }}</p>
-          <input v-model="name" @keyup.enter="createFile"
-                 class="vuefinder__new-file-modal__input" :placeholder="t('File Name')" type="text">
-          <message v-if="message.length" @hidden="message=''" error>{{ message }}</message>
+          <input v-model="name" @keyup.enter="createFile" class="vuefinder__new-file-modal__input"
+            :placeholder="t('File Name')" type="text">
+          <SimpleMessage v-if="message.length" @hidden="message = ''" error>{{ message }}</SimpleMessage>
         </div>
       </div>
     </div>
@@ -19,16 +19,17 @@
   </ModalLayout>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import ModalLayout from './ModalLayout.vue';
-import {inject, ref} from 'vue';
-import Message from '../Message.vue';
+import { inject, ref } from 'vue';
+import SimpleMessage from '@/components/SimpleMessage.vue';
 import ModalHeader from "./ModalHeader.vue";
 import NewFileSVG from "../icons/new_file.svg";
+import type { ServiceContainer } from '@/ServiceContainer';
 
-const app = inject('ServiceContainer');
-const {getStore} = app.storage;
-const {t} = app.i18n;
+const app = inject<ServiceContainer>('ServiceContainer')!;
+
+const { t } = app.i18n;
 
 const name = ref('');
 const message = ref('');
@@ -39,14 +40,14 @@ const createFile = () => {
       params: {
         q: 'newfile',
         m: 'post',
-        adapter: app.fs.adapter,
+        adapter: app.fs.adapter.value,
         path: app.fs.data.dirname,
       },
       body: {
         name: name.value
       },
       onSuccess: () => {
-        app.emitter.emit('vf-toast-push', {label: t('%s is created.', name.value)});
+        app.emitter.emit('vf-toast-push', { label: t('%s is created.', name.value) });
       },
       onError: (e) => {
         message.value = t(e.message);

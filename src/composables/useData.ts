@@ -1,21 +1,37 @@
-import {computed, onMounted, reactive, ref, watch} from "vue";
+import { computed, onMounted, reactive, ref, watch, type Ref } from "vue";
 
-export default function (initialAdapter, initialPath) {
+export type Item = {
+    basename?: string,
+    name?: string,
+    path: string,
+    type?: string,
+    adapter?: string,
+    mime_type?: string,
+    file_size?: number,
+    last_modified?: number,
+    storage?: string,
+    folders?: Item[],
+};
+
+// TODO why is all of the breadcrums stuff here?
+
+export default function (initialAdapter: string, initialPath: string) {
 
     const adapter = ref(initialAdapter);
     const path = ref(initialPath);
-    const breadcrumbs = ref([]);
-    const breadcrumbItems = ref([]);
-    const hiddenBreadcrumbs = ref([]);
+    const breadcrumbs = ref<Item[]>([]);
+    const breadcrumbItems = ref<Item[]>([]);
+    const hiddenBreadcrumbs = ref<Item[]>([]);
     const showHiddenBreadcrumbs = ref(false);
     const breadcrumbItemLimit = ref(5);
 
-    let loading = false; // loading state
+    // TODO why are these constants and not refs?
+    const loading = false; // loading state
+    const searchMode = false;
 
-    let searchMode = false;
 
     // fetched items
-    const data = reactive({
+    const data = reactive<{ adapter: Ref<string>, storages: string[], dirname: Ref<string>, files: Item[] }>({
         adapter: adapter,
         storages: [],
         dirname: path,
@@ -24,9 +40,10 @@ export default function (initialAdapter, initialPath) {
 
     // breadcrumbs for the current path
     function updateBreadcrumbs() {
-        let items = [], links = [];
+        const items: string[] = [];
+        const links: Item[] = [];
 
-        let dirname = path.value ?? (adapter.value + '://');
+        const dirname = path.value ?? (adapter.value + '://');
 
         if (dirname.length === 0) {
             breadcrumbs.value = [];
@@ -35,7 +52,7 @@ export default function (initialAdapter, initialPath) {
         dirname
             .replace(adapter.value + '://', '')
             .split('/')
-            .forEach(function (item) {
+            .forEach((item) => {
                 items.push(item);
                 if (items.join('/') !== '') {
                     links.push({
@@ -49,18 +66,18 @@ export default function (initialAdapter, initialPath) {
 
         breadcrumbItems.value = links;
 
-        const [linksToDisplay, hiddenLinks ] = separateBreadcrumbs(links, breadcrumbItemLimit.value);
+        const [linksToDisplay, hiddenLinks] = separateBreadcrumbs(links, breadcrumbItemLimit.value);
 
         hiddenBreadcrumbs.value = hiddenLinks;
         breadcrumbs.value = linksToDisplay;
     }
 
-    function limitBreadcrumbItems(count){
+    function limitBreadcrumbItems(count: number) {
         breadcrumbItemLimit.value = count;
         updateBreadcrumbs();
     }
 
-    function separateBreadcrumbs(links, show) {
+    function separateBreadcrumbs(links: Item[], show: number) {
         if (links.length > show) {
             return [links.slice(-show), links.slice(0, -show)];
         }
@@ -68,15 +85,18 @@ export default function (initialAdapter, initialPath) {
         return [links, []]
     }
 
-    function toggleHiddenBreadcrumbs(value = null) {
-        showHiddenBreadcrumbs.value = value ?? !showHiddenBreadcrumbs.value;
+    function toggleHiddenBreadcrumbs(value?: boolean) {
+        if (value === undefined) {
+            value = !showHiddenBreadcrumbs.value;
+        }
+        showHiddenBreadcrumbs.value = value;
     }
 
     function isGoUpAvailable() {
         return breadcrumbs.value && breadcrumbs.value.length && !searchMode;
     };
 
-    const parentFolderPath =  computed(()  => {
+    const parentFolderPath = computed(() => {
         return breadcrumbs.value[breadcrumbs.value.length - 2]?.path ?? (adapter.value + '://');
     });
 
