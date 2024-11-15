@@ -13,10 +13,10 @@
 <script setup lang="ts">
 import { ref, inject, watch } from 'vue';
 
-import SquarePlusSVG from "./icons/plus.svg";
-import SquareMinusSVG from "./icons/minus.svg";
-import LoadingSVG from "./icons/loading.svg";
-import upsert from "../utils/upsert";
+import SquarePlusSVG from "@/icons/plus.svg";
+import SquareMinusSVG from "@/icons/minus.svg";
+import LoadingSVG from "@/icons/loading.svg";
+import upsert from "@/utils/upsert";
 import type { ServiceContainer } from '@/ServiceContainer';
 
 // TODO move state elsewhere?

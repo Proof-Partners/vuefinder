@@ -55,7 +55,7 @@ const {
 //       multiple: false,
 //       click: (items) => {
 //         // items is an array of selected items
-//         // 
+//         //
 //       },
 //       ...rawProps,
 //     }

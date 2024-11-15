@@ -62,9 +62,12 @@ app.emitter.on('vf-toast-push', (data) => {
 
 
 .message {
-  @apply inline-block mx-auto my-0.5 py-0.5 px-2 min-w-max bg-gray-50 dark:bg-gray-600 border text-xs sm:text-sm rounded cursor-pointer;
+  @apply inline-block mx-auto my-0.5 py-0.5 px-2 min-w-max border rounded cursor-pointer;
+  @apply text-xs sm:text-sm;
+  @apply bg-gray-50 dark:bg-gray-600;
 
-  @apply text-lime-600 border-lime-600 dark:text-lime-300 dark:border-lime-1300;
+  @apply text-lime-600 border-lime-600;
+  /* @apply dark:text-lime-300 dark:border-lime-1300; */
 
   &.error {
     @apply text-red-400 border-red-400 dark:text-red-300 dark:border-red-300;

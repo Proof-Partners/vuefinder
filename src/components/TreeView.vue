@@ -44,14 +44,14 @@
 
 <script setup lang="ts">
 import { inject, onMounted, ref, useTemplateRef, watch } from 'vue';
-import FolderSVG from './icons/folder.svg';
-import OpenFolderSVG from './icons/open_folder.svg';
-import PinSVG from "./icons/pin.svg";
-import XBoxSVG from "./icons/x_box.svg";
+import FolderSVG from '@/icons/folder.svg';
+import OpenFolderSVG from '@/icons/open_folder.svg';
+import PinSVG from '@/icons/pin.svg';
+import XBoxSVG from '@/icons/x_box.svg';
 
 import { OverlayScrollbars } from 'overlayscrollbars';
 import TreeStorageItem from "./TreeStorageItem.vue";
-import upsert from "../utils/upsert";
+import upsert from '@/utils/upsert';
 import FolderIndicator from "./FolderIndicator.vue";
 import type { ServiceContainer } from '@/ServiceContainer';
 import type { Item } from '@/composables/useData';

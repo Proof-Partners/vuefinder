@@ -20,11 +20,11 @@
       <div>
         <HomeSVG @dragover="handleDragOver($event)" @dragleave="handleDragLeave($event)"
           @drop="handleDropZone($event, -1)"
-          @click="app.emitter.emit('vf-fetch', { params: { q: 'index', adapter: app.fs.adapter } })" />
+          @click="app.emitter.emit('vf-fetch', { params: { q: 'index', adapter: app.fs.adapter.value } })" />
       </div>
 
       <div class="list">
-        <div v-if="app.fs.hiddenBreadcrumbs.value.length" class="hidden-list" v-click-outside="handleClickOutside">
+        <div v-if="app.fs.hiddenBreadcrumbs.value?.length" class="hidden-list" v-click-outside="handleClickOutside">
           <div class="separator">/</div>
           <div class="relative">
             <span @dragenter="app.fs.toggleHiddenBreadcrumbs(true)" @click="app.fs.toggleHiddenBreadcrumbs()"
@@ -42,7 +42,7 @@
             @dragleave="(index === app.fs.breadcrumbs.value.length - 1) || handleDragLeave($event)"
             @drop="(index === app.fs.breadcrumbs.value.length - 1) || handleDropZone($event, index)" class="item"
             :title="item.basename"
-            @click="app.emitter.emit('vf-fetch', { params: { q: 'index', adapter: app.fs.adapter, path: item.path } })">{{
+            @click="app.emitter.emit('vf-fetch', { params: { q: 'index', adapter: app.fs.adapter.value, path: item.path } })">{{
               item.name }}</span>
         </div>
       </div>
@@ -194,7 +194,7 @@ const handleDragLeave = (e: DragEvent) => {
 const handleRefresh = () => {
   exitSearchMode();
 
-  app.emitter.emit('vf-fetch', { params: { q: 'index', adapter: app.fs.adapter, path: app.fs.data.dirname } });
+  app.emitter.emit('vf-fetch', { params: { q: 'index', adapter: app.fs.adapter.value, path: app.fs.data.dirname } });
 };
 
 const handleGoUp = () => {
@@ -204,15 +204,15 @@ const handleGoUp = () => {
     app.emitter.emit('vf-fetch', {
       params: {
         q: 'index',
-        adapter: app.fs.adapter,
-        path: app.fs.parentFolderPath
+        adapter: app.fs.adapter.value,
+        path: app.fs.parentFolderPath.value
       }
     })
   }
 };
 
 const handleHiddenBreadcrumbsClick = (item: Item) => {
-  app.emitter.emit('vf-fetch', { params: { q: 'index', adapter: app.fs.adapter, path: item.path } });
+  app.emitter.emit('vf-fetch', { params: { q: 'index', adapter: app.fs.adapter.value, path: item.path } });
   app.fs.toggleHiddenBreadcrumbs(false);
 }
 

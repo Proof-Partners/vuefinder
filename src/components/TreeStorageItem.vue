@@ -17,7 +17,7 @@
 <script setup lang="ts">
 import { inject, ref } from 'vue';
 
-import StorageSVG from "./icons/storage.svg";
+import StorageSVG from "@/icons/storage.svg";
 import FolderLoaderIndicator from "./FolderLoaderIndicator.vue";
 import TreeSubfolderList from "./TreeSubfolderList.vue";
 import type { ServiceContainer } from '@/ServiceContainer';
@@ -30,7 +30,7 @@ const showSubFolders = ref(false);
 defineProps<{ storage: string }>();
 
 /**
- * If the storage is active the visibilty of the subfolders gets toggled, otherwise the storage will become active 
+ * If the storage is active the visibilty of the subfolders gets toggled, otherwise the storage will become active
  * @param storage {string}
  */
 function selectOrToggle(storage: string) {

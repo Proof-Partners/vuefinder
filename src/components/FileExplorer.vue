@@ -181,7 +181,9 @@ const sortBy = (column: keyof Item) => {
 
 
 onMounted(() => {
-  vfLazyLoad = new LazyLoad({ container: ds.value.area.value! });
+  if (ds.value) {
+    vfLazyLoad = new LazyLoad({ container: ds.value.area.value! });
+  }
 });
 
 onUpdated(() => {

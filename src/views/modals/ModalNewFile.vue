@@ -24,7 +24,7 @@ import ModalLayout from './ModalLayout.vue';
 import { inject, ref } from 'vue';
 import SimpleMessage from '@/components/SimpleMessage.vue';
 import ModalHeader from "./ModalHeader.vue";
-import NewFileSVG from "../icons/new_file.svg";
+import NewFileSVG from "@/icons/new_file.svg";
 import type { ServiceContainer } from '@/ServiceContainer';
 
 const app = inject<ServiceContainer>('ServiceContainer')!;

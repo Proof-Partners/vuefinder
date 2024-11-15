@@ -26,8 +26,8 @@
 <script setup lang="ts">
 import { computed, inject, onMounted, ref, useTemplateRef } from 'vue';
 
-import FolderSVG from "./icons/folder.svg";
-import OpenFolderSVG from "./icons/open_folder.svg";
+import FolderSVG from "@/icons/folder.svg";
+import OpenFolderSVG from "@/icons/open_folder.svg";
 import FolderLoaderIndicator from "./FolderLoaderIndicator.vue";
 import { OverlayScrollbars } from "overlayscrollbars";
 import type { ServiceContainer } from '@/ServiceContainer';

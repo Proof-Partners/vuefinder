@@ -38,7 +38,7 @@ import ModalLayout from './ModalLayout.vue';
 import { inject, ref } from 'vue';
 import SimpleMessage from '@/components/SimpleMessage.vue';
 import ModalHeader from "./ModalHeader.vue";
-import UnarchiveSVG from "../icons/unarchive.svg";
+import UnarchiveSVG from "@/icons/unarchive.svg";
 import type { ServiceContainer } from '@/ServiceContainer';
 import type { Item } from '@/composables/useData';
 

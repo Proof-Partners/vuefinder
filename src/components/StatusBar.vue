@@ -13,7 +13,7 @@
       </div>
       <div class="info">
         <span v-if="searchQuery.length">{{ app.fs.data.files.length }} items found. </span>
-        <span class="selected-count">{{ app.dragSelect.value.getCount() > 0 ? t('%s item(s) selected.',
+        <span class="selected-count">{{ app.dragSelect.value?.getCount() > 0 ? t('%s item(s) selected.',
           app.dragSelect.value.getCount()) : '' }}</span>
       </div>
     </div>
@@ -56,7 +56,7 @@ const isSelectButtonActive = computed(() => {
   if (!app.selectButton) {
     return false;
   }
-  const selectionAllowed = app.selectButton.multiple ? ds.value.getSelected().length > 0 : ds.value.getSelected().length === 1;
+  const selectionAllowed = app.selectButton.multiple ? ds.value?.getSelected().length > 0 : ds.value?.getSelected().length === 1;
   return app.selectButton.active && selectionAllowed;
 });
 
